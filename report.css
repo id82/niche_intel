@@ -70,14 +70,24 @@ tr:nth-child(even) {
     transform-origin: left center;
 }
 
-.cover-image:hover {
-    transform: scale(4.4); /* 220px / 50px = 4.4 */
-    position: fixed !important;
-    z-index: 100000 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    border-radius: 4px;
-    margin-top: -50px !important;
-    margin-left: 20px !important;
+/* Positioned hover modal for image expansion */
+#image-hover-modal {
+    position: fixed;
+    z-index: 100000;
+    display: none;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+#image-hover-modal img {
+    max-width: 220px;
+    max-height: 300px;
+    object-fit: contain;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    border-radius: 6px;
+    border: 2px solid white;
+    background: white;
+    padding: 2px;
 }
 
 .title {

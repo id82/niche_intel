@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tableContainer = document.getElementById('table-container');
     const progressText = document.getElementById('progress-text');
     
+    // Create positioned hover modal for images
+    createImageHoverModal();
 
     console.log("report.js: Loading initial data from local storage.");
     const { serpData, asinsToProcess, currentDomain } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain']);
@@ -216,6 +218,9 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
     `;
     container.innerHTML = tableHTML;
     console.log("report.js: Initial table rendered.");
+    
+    // Add image hover events after table is rendered
+    setTimeout(() => addImageHoverEvents(), 100);
     
 }
 
@@ -675,5 +680,116 @@ function exportToCSV() {
     window.URL.revokeObjectURL(url);
     
     console.log("report.js: CSV export completed");
+}
+
+// Positioned hover modal functionality
+let hoverTimeout = null;
+
+function createImageHoverModal() {
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.id = 'image-hover-modal';
+    modal.innerHTML = '<img src="" alt="Enlarged cover image">';
+    document.body.appendChild(modal);
+}
+
+function showImageModal(imageSrc, sourceElement) {
+    const modal = document.getElementById('image-hover-modal');
+    const img = modal.querySelector('img');
+    
+    // Set image source
+    img.src = imageSrc;
+    
+    // Calculate position relative to source element
+    const rect = sourceElement.getBoundingClientRect();
+    const modalWidth = 220; // max-width from CSS
+    const modalHeight = 300; // max-height from CSS
+    const offset = 10; // offset from original image
+    
+    // Smart positioning logic
+    let left = rect.right + offset;
+    let top = rect.top;
+    
+    // Check if modal would go off right edge of viewport
+    if (left + modalWidth > window.innerWidth) {
+        left = rect.left - modalWidth - offset; // Show on left side instead
+    }
+    
+    // Check if modal would go off bottom edge of viewport
+    if (top + modalHeight > window.innerHeight) {
+        top = window.innerHeight - modalHeight - offset; // Adjust to stay in viewport
+    }
+    
+    // Ensure modal doesn't go off top edge
+    if (top < offset) {
+        top = offset;
+    }
+    
+    // Ensure modal doesn't go off left edge (final safety check)
+    if (left < offset) {
+        left = offset;
+    }
+    
+    // Position and show modal
+    modal.style.left = left + 'px';
+    modal.style.top = top + 'px';
+    modal.style.display = 'block';
+    modal.style.opacity = '1';
+}
+
+function hideImageModal() {
+    const modal = document.getElementById('image-hover-modal');
+    modal.style.opacity = '0';
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 200);
+}
+
+function addImageHoverEvents() {
+    const coverImages = document.querySelectorAll('.cover-image');
+    
+    coverImages.forEach(img => {
+        img.addEventListener('mouseenter', () => {
+            if (img.src && img.src !== '') {
+                // Clear any existing timeout
+                if (hoverTimeout) {
+                    clearTimeout(hoverTimeout);
+                }
+                
+                // Small delay to prevent flickering on rapid mouse movement
+                hoverTimeout = setTimeout(() => {
+                    showImageModal(img.src, img);
+                }, 150);
+            }
+        });
+        
+        img.addEventListener('mouseleave', () => {
+            // Clear timeout if mouse leaves before delay completes
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+            }
+            
+            // Hide modal after short delay to allow moving to modal
+            setTimeout(() => {
+                hideImageModal();
+            }, 100);
+        });
+    });
+    
+    // Also hide modal when mouse leaves the modal itself
+    const modal = document.getElementById('image-hover-modal');
+    if (modal) {
+        modal.addEventListener('mouseenter', () => {
+            // Keep modal visible when hovering over it
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+            }
+        });
+        
+        modal.addEventListener('mouseleave', () => {
+            hideImageModal();
+        });
+    }
 }
 
