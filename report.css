@@ -8,9 +8,57 @@ body {
     background-color: #232f3e;
     color: white;
     padding: 10px 20px;
-    text-align: center;
     position: relative;
     z-index: 10;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.adigy-link {
+    color: #ff9900;
+    text-decoration: none;
+}
+
+.adigy-link:hover {
+    text-decoration: underline;
+}
+
+.header-right {
+    display: flex;
+    gap: 10px;
+}
+
+.header-button {
+    background-color: #ff9900;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.header-button:hover {
+    background-color: #e68900;
+}
+
+.footer {
+    text-align: center;
 }
 
 .header h1 {
@@ -53,7 +101,33 @@ th {
 }
 
 /* Keep Title & Author header left aligned */
-th:nth-child(6) {
+th:nth-child(5) {
+    text-align: left;
+}
+
+/* ASIN styling with monospace font */
+.asin-cell {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+}
+
+/* Discounted price styling */
+.discount-price {
+    font-style: italic;
+}
+
+/* Title and Author cell content should be left aligned */
+.title-author-cell {
+    text-align: left;
+}
+
+/* All other table cells center aligned except totals labels */
+td {
+    text-align: center;
+}
+
+/* Keep title & author content left aligned */
+td:nth-child(5) {
     text-align: left;
 }
 
@@ -107,7 +181,7 @@ tr:nth-child(even) {
 }
 
 /* Right align columns from Price onwards */
-th:nth-child(n+7), td:nth-child(n+7) {
+th:nth-child(n+6), td:nth-child(n+6) {
     text-align: center;
 }
 
@@ -135,4 +209,9 @@ th:nth-child(n+7), td:nth-child(n+7) {
 /* Keep the first column (label) left aligned in high royalty totals row */
 #high-royalty-totals-row td:first-child {
     text-align: left;
+}
+
+/* Ensure header buttons are visible */
+.header-button {
+    display: inline-block !important;
 }

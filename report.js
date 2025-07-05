@@ -114,9 +114,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         <table>
             <thead>
                 <tr>
-                    <th>Pos</th>
                     <th>Type</th>
-                    <th>Badge</th>
                     <th>ASIN</th>
                     <th>Cover</th>
                     <th>Title & Author</th>
@@ -127,6 +125,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <th>Formats</th>
                     <th>BSR</th>
                     <th>Days on Market</th>
+                    <th>Length</th>
                     <th>Large Trim</th>
                     <th>A+ Modules</th>
                     <th>UGC Videos</th>
@@ -147,15 +146,21 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         const earliestPosition = placements.length > 0 ? Math.min(...placements.map(p => p.position)) : 'N/A';
         const allTypes = placements.length > 0 ? [...new Set(placements.map(p => p.type))].join(', ') : 'N/A';
 
+        // Get badge value for display
+        const badgeText = product.badge_status ? 
+            (product.badge_status === 'bestseller' ? 'BS' : 
+             product.badge_status === 'new-release' ? 'NR' : 
+             product.badge_status === 'amazon-charts' ? 'AC' : '') : '';
+        
+        const titleWithBadge = badgeText ? `(${badgeText}) ${product.title || 'N/A'}` : (product.title || 'N/A');
+        
         tableHTML += `
             <tr data-asin="${asin}">
-                <td>${earliestPosition}</td>
                 <td>${allTypes}</td>
-                <td id="badge-${asin}" class="placeholder">...</td>
-                <td><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
+                <td class="asin-cell"><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
                 <td><img src="${product.coverUrl || ''}" class="cover-image"/></td>
-                <td>
-                    <div class="title">${product.title || 'N/A'}</div>
+                <td class="title-author-cell">
+                    <div class="title" id="title-${asin}">${titleWithBadge}</div>
                     <div class="author">${(product.authors && product.authors.length > 0) ? product.authors.join(', ') : 'N/A'}</div>
                 </td>
                 <td id="price-${asin}" class="placeholder">...</td>
@@ -165,6 +170,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                 <td id="formats-${asin}" class="placeholder">...</td>
                 <td id="bsr-${asin}" class="placeholder">...</td>
                 <td id="days-${asin}" class="placeholder">...</td>
+                <td id="length-${asin}" class="placeholder">...</td>
                 <td id="trim-${asin}" class="placeholder">...</td>
                 <td id="aplus-${asin}" class="placeholder">...</td>
                 <td id="ugc-videos-${asin}" class="placeholder">...</td>
@@ -180,7 +186,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
             </tbody>
             <tfoot>
                 <tr id="totals-row" style="font-weight: bold;">
-                    <td colspan="6">Totals / Averages</td>
+                    <td colspan="5">Totals / Averages</td>
                     <td id="avg-price">$0.00</td>
                     <td id="total-reviews">0</td>
                     <td id="avg-rating">0.00</td>
@@ -188,6 +194,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td id="avg-formats">0.0</td>
                     <td id="avg-bsr">N/A</td>
                     <td id="avg-days">N/A</td>
+                    <td id="avg-length">0</td>
                     <td id="pct-large-trim">0.00%</td>
                     <td id="avg-aplus">0.0</td>
                     <td id="avg-ugc-videos">0.0</td>
@@ -197,7 +204,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td></td> <!-- Publisher -->
                 </tr>
                 <tr id="high-royalty-totals-row" style="font-weight: bold; background-color: #e8f5e8;">
-                    <td colspan="6">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span> books</td>
+                    <td colspan="5">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span></td>
                     <td id="high-avg-price">$0.00</td>
                     <td id="high-total-reviews">0</td>
                     <td id="high-avg-rating">0.00</td>
@@ -205,6 +212,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td id="high-avg-formats">0.0</td>
                     <td id="high-avg-bsr">N/A</td>
                     <td id="high-avg-days">N/A</td>
+                    <td id="high-avg-length">0</td>
                     <td id="high-pct-large-trim">0.00%</td>
                     <td id="high-avg-aplus">0.0</td>
                     <td id="high-avg-ugc-videos">0.0</td>
@@ -252,6 +260,7 @@ function updateTableRow(asin, data) {
     const reviewImageCount = get(['customer_reviews', 'review_image_count'], data);
     const bsr = get(['product_details', 'bsr'], data);
     const daysOnMarket = get(['product_details', 'days_on_market'], data);
+    const pageCount = get(['product_details', 'print_length'], data);
     const publisher = get(['product_details', 'publisher'], data);
     const largeTrim = get(['product_details', 'large_trim'], data);
     const aplusCount = get(['aplus_content', 'modulesCount'], data);
@@ -259,22 +268,28 @@ function updateTableRow(asin, data) {
     const editorialReviews = get(['editorial_reviews'], data);
     const royaltyUnit = get(['royalties', 'royalty_per_unit'], data);
     const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
+    
+    // Update title with badge if badge status changed
+    if (badgeStatus) {
+        const badgeAcronym = badgeStatus === 'bestseller' ? 'BS' : 
+                            badgeStatus === 'new-release' ? 'NR' : 
+                            badgeStatus === 'amazon-charts' ? 'AC' : '';
+        const titleElement = document.getElementById(`title-${asin}`);
+        if (titleElement && badgeAcronym) {
+            const currentTitle = titleElement.textContent;
+            if (!currentTitle.startsWith('(')) {
+                titleElement.textContent = `(${badgeAcronym}) ${currentTitle}`;
+            }
+        }
+    }
 
-    updateCell(`badge-${asin}`, badgeStatus, val => {
-        if (val === 'absent') return '';
-        const acronyms = {
-            'bestseller': 'BS',
-            'new-release': 'NR', 
-            'amazon-charts': 'AC',
-            'unknown': ''
-        };
-        return acronyms[val] || val.toUpperCase().substring(0, 2);
-    });
+    // Badge is now handled in title display
     updateCell(`formats-${asin}`, formatCount, val => val || 0);
     updateCell(`rating-${asin}`, avgRating, val => val || 0);
     updateCell(`review-images-${asin}`, reviewImageCount, val => val || 0);
     updateCell(`bsr-${asin}`, bsr, val => val ? val.toLocaleString() : 'N/A');
     updateCell(`days-${asin}`, daysOnMarket, val => val !== null ? val.toLocaleString() : 'N/A');
+    updateCell(`length-${asin}`, pageCount, val => val ? val.toLocaleString() : 'N/A');
     updateCell(`publisher-${asin}`, publisher);
     updateCell(`trim-${asin}`, largeTrim, val => val ? 'Yes' : 'No');
     updateCell(`aplus-${asin}`, aplusCount, val => val || 0);
@@ -294,7 +309,7 @@ function updateTableRow(asin, data) {
             
             if (listPrice && lowestPrice && lowestPrice < listPrice) {
                 const discount = Math.round(((listPrice - lowestPrice) / listPrice) * 100);
-                priceDisplay = `$${listPrice.toFixed(2)}<br>$${lowestPrice.toFixed(2)}(-${discount}%)`;
+                priceDisplay = `$${listPrice.toFixed(2)}<br><span class="discount-price">$${lowestPrice.toFixed(2)}(-${discount}%)</span>`;
             } else if (listPrice) {
                 priceDisplay = `$${listPrice.toFixed(2)}`;
             }
@@ -368,6 +383,7 @@ function calculateAndDisplayTotals(allData) {
         const reviewImages = get(['customer_reviews', 'review_image_count'], data);
         const bsr = get(['product_details', 'bsr'], data);
         const days = get(['product_details', 'days_on_market'], data);
+        const pageCount = get(['product_details', 'print_length'], data);
         const aplus = get(['aplus_content', 'modulesCount'], data);
         const ugc = get(['ugc_videos', 'video_count'], data);
         const royaltyUnit = get(['royalties', 'royalty_per_unit'], data);
@@ -406,6 +422,10 @@ function calculateAndDisplayTotals(allData) {
         if (days) {
             totals.daysSum += days;
             totals.daysCount++;
+        }
+        if (pageCount) {
+            totals.lengthSum += pageCount;
+            totals.lengthCount++;
         }
         if (aplus) {
             totals.aplusSum += aplus;
@@ -447,6 +467,7 @@ function calculateAndDisplayTotals(allData) {
     document.getElementById('total-review-images').textContent = (totals.reviewImagesCount > 0 ? Math.round(totals.reviewImagesSum / totals.reviewImagesCount).toLocaleString() : '0');
     document.getElementById('avg-bsr').textContent = (totals.bsrCount > 0 ? Math.round(totals.bsrSum / totals.bsrCount).toLocaleString() : 'N/A');
     document.getElementById('avg-days').textContent = (totals.daysCount > 0 ? Math.round(totals.daysSum / totals.daysCount).toLocaleString() : 'N/A');
+    document.getElementById('avg-length').textContent = (totals.lengthCount > 0 ? Math.round(totals.lengthSum / totals.lengthCount).toLocaleString() : 'N/A');
     document.getElementById('avg-aplus').textContent = (totals.aplusCount > 0 ? (totals.aplusSum / totals.aplusCount).toFixed(1) : '0.0');
     document.getElementById('avg-ugc-videos').textContent = (totals.ugcCount > 0 ? (totals.ugcVideos / totals.ugcCount).toFixed(1) : '0.0');
     document.getElementById('avg-royalty-unit').textContent = (totals.royaltyUnitCount > 0 ? `$${(totals.royaltyUnitSum / totals.royaltyUnitCount).toFixed(2)}` : '$0.00');
@@ -484,6 +505,8 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         bsrCount: 0,
         daysSum: 0,
         daysCount: 0,
+        lengthSum: 0,
+        lengthCount: 0,
         aplusSum: 0,
         aplusCount: 0,
         ugcVideos: 0,
@@ -509,6 +532,7 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         const reviewImages = get(['customer_reviews', 'review_image_count'], data);
         const bsr = get(['product_details', 'bsr'], data);
         const days = get(['product_details', 'days_on_market'], data);
+        const pageCount = get(['product_details', 'print_length'], data);
         const aplus = get(['aplus_content', 'modulesCount'], data);
         const ugc = get(['ugc_videos', 'video_count'], data);
         const royaltyUnit = get(['royalties', 'royalty_per_unit'], data);
@@ -547,6 +571,10 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         if (days) {
             highTotals.daysSum += days;
             highTotals.daysCount++;
+        }
+        if (pageCount) {
+            highTotals.lengthSum += pageCount;
+            highTotals.lengthCount++;
         }
         if (aplus) {
             highTotals.aplusSum += aplus;
@@ -594,7 +622,7 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     // Update the high royalty count with recent books info
     const countText = recentBooksCount > 0 
         ? `${highTotals.totalProducts} books - ${recentBooksCount} published in the last 90 days`
-        : `${highTotals.totalProducts} books`;
+        : highTotals.totalProducts === 0 ? '0 published in the last 90 days' : `${highTotals.totalProducts} books`;
     document.getElementById('high-royalty-count').textContent = countText;
     
     // Update all the high royalty totals
@@ -604,6 +632,7 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     document.getElementById('high-total-review-images').textContent = (highTotals.reviewImagesCount > 0 ? Math.round(highTotals.reviewImagesSum / highTotals.reviewImagesCount).toLocaleString() : '0');
     document.getElementById('high-avg-bsr').textContent = (highTotals.bsrCount > 0 ? Math.round(highTotals.bsrSum / highTotals.bsrCount).toLocaleString() : 'N/A');
     document.getElementById('high-avg-days').textContent = (highTotals.daysCount > 0 ? Math.round(highTotals.daysSum / highTotals.daysCount).toLocaleString() : 'N/A');
+    document.getElementById('high-avg-length').textContent = (highTotals.lengthCount > 0 ? Math.round(highTotals.lengthSum / highTotals.lengthCount).toLocaleString() : 'N/A');
     document.getElementById('high-avg-aplus').textContent = (highTotals.aplusCount > 0 ? (highTotals.aplusSum / highTotals.aplusCount).toFixed(1) : '0.0');
     document.getElementById('high-avg-ugc-videos').textContent = (highTotals.ugcCount > 0 ? (highTotals.ugcVideos / highTotals.ugcCount).toFixed(1) : '0.0');
     document.getElementById('high-avg-royalty-unit').textContent = (highTotals.royaltyUnitCount > 0 ? `$${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : '$0.00');
@@ -627,8 +656,45 @@ document.addEventListener('DOMContentLoaded', () => {
         exportButton.addEventListener('click', () => {
             exportToCSV();
         });
+        // Show the button since it's now in the header
+        exportButton.style.display = 'inline-block';
+    }
+    
+    const copyAsinsButton = document.getElementById('copyAsins');
+    if (copyAsinsButton) {
+        copyAsinsButton.addEventListener('click', () => {
+            copyAsinsToClipboard();
+        });
     }
 });
+
+function copyAsinsToClipboard() {
+    console.log("report.js: Copying ASINs to clipboard");
+    
+    // Get all ASIN links from the table
+    const asinLinks = document.querySelectorAll('.asin-cell a');
+    if (asinLinks.length === 0) {
+        alert('No ASINs found to copy');
+        return;
+    }
+    
+    // Extract ASINs and join with newlines
+    const asins = Array.from(asinLinks).map(link => link.textContent.trim());
+    const asinText = asins.join('\n');
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(asinText).then(() => {
+        // Temporarily change button text to show success
+        const originalText = copyAsinsButton.textContent;
+        copyAsinsButton.textContent = 'Copied!';
+        setTimeout(() => {
+            copyAsinsButton.textContent = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy ASINs:', err);
+        alert('Failed to copy ASINs to clipboard');
+    });
+}
 
 function exportToCSV() {
     console.log("report.js: Exporting data to CSV");

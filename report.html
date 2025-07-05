@@ -2,12 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Amazon SERP Deep-Dive Report</title>
+    <title>NicheIntel Pro by Adigy</title>
     <link rel="stylesheet" href="report.css">
 </head>
 <body>
     <div class="header">
-        <h1>Amazon SERP Deep-Dive Report</h1>
+        <div class="header-content">
+            <div class="header-left">
+                <img src="icons/icon32.png" alt="NicheIntel Pro" class="header-icon">
+                <h1>NicheIntel Pro by <a href="https://adigy.ai" target="_blank" class="adigy-link">Adigy</a></h1>
+            </div>
+            <div class="header-right">
+                <button id="copyAsins" class="header-button">Copy ASINs</button>
+                <button id="exportData" class="header-button">Export CSV</button>
+            </div>
+        </div>
         <div id="progress-container">
             <p id="progress-text">Initializing...</p>
             <div style="width: 100%; background-color: #f0f0f0; border-radius: 4px; margin-top: 5px;">
@@ -20,7 +29,6 @@
     </div>
     <div class="footer">
         <p>Functional Test v1.0</p>
-        <button id="exportData" style="margin: 10px; padding: 8px 16px; display: none;">Export Data (CSV)</button>
     </div>
     <script src="report.js"></script>
 </body>
