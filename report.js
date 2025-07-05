@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tableContainer = document.getElementById('table-container');
     const progressText = document.getElementById('progress-text');
     
-    // Create image overlay element
-    createImageOverlay();
 
     console.log("report.js: Loading initial data from local storage.");
     const { serpData, asinsToProcess, currentDomain } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain']);
@@ -219,8 +217,6 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
     container.innerHTML = tableHTML;
     console.log("report.js: Initial table rendered.");
     
-    // Add image hover events after table is rendered
-    setTimeout(() => addImageHoverEvents(), 100);
 }
 
 function updateTableRow(asin, data) {
@@ -681,55 +677,3 @@ function exportToCSV() {
     console.log("report.js: CSV export completed");
 }
 
-// Image overlay functionality
-function createImageOverlay() {
-    // Create overlay container
-    const overlay = document.createElement('div');
-    overlay.id = 'image-overlay';
-    overlay.innerHTML = '<img src="" alt="Enlarged cover image">';
-    document.body.appendChild(overlay);
-    
-    // Hide overlay when clicked
-    overlay.addEventListener('click', hideImageOverlay);
-    
-    // Hide overlay on Escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            hideImageOverlay();
-        }
-    });
-}
-
-function showImageOverlay(imageSrc) {
-    const overlay = document.getElementById('image-overlay');
-    const img = overlay.querySelector('img');
-    img.src = imageSrc;
-    overlay.style.display = 'flex';
-    
-    // Add small delay for smooth transition
-    setTimeout(() => {
-        img.style.transform = 'scale(1)';
-    }, 10);
-}
-
-function hideImageOverlay() {
-    const overlay = document.getElementById('image-overlay');
-    const img = overlay.querySelector('img');
-    img.style.transform = 'scale(0.8)';
-    
-    setTimeout(() => {
-        overlay.style.display = 'none';
-    }, 200);
-}
-
-// Add hover events to cover images when table is rendered
-function addImageHoverEvents() {
-    const coverImages = document.querySelectorAll('.cover-image');
-    coverImages.forEach(img => {
-        img.addEventListener('mouseenter', () => {
-            if (img.src && img.src !== '') {
-                showImageOverlay(img.src);
-            }
-        });
-    });
-}

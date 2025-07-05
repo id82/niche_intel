@@ -70,28 +70,14 @@ tr:nth-child(even) {
     transform-origin: left center;
 }
 
-/* Image overlay that appears above everything */
-#image-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 100000;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    pointer-events: auto;
-}
-
-#image-overlay img {
-    max-width: 220px;
-    max-height: 80vh;
-    object-fit: contain;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+.cover-image:hover {
+    transform: scale(4.4); /* 220px / 50px = 4.4 */
+    position: fixed !important;
+    z-index: 100000 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     border-radius: 4px;
-    transition: transform 0.3s ease;
+    margin-top: -50px !important;
+    margin-left: 20px !important;
 }
 
 .title {
