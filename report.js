@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let processedCount = 0;
     const totalToProcess = asinsToProcess.length;
     let allData = []; // To store data for all processed ASINs
+    let uniqueAsins = new Set(); // To track unique ASINs and avoid double counting
 
     progressText.textContent = `Progress: ${processedCount} / ${totalToProcess} products analyzed.`;
 
@@ -40,7 +41,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             updateTableRow(request.asin, combinedData);
-            allData.push(combinedData); // Add data to the array
+            
+            // Only add to allData if this ASIN hasn't been processed yet (avoid double counting)
+            if (!uniqueAsins.has(request.asin)) {
+                allData.push(combinedData); // Add data to the array
+                uniqueAsins.add(request.asin);
+            } else {
+                // Update existing data for this ASIN
+                const existingIndex = allData.findIndex(item => item.asin === request.asin);
+                if (existingIndex !== -1) {
+                    allData[existingIndex] = combinedData;
+                }
+            }
             
             // Update the author display in the table if we have better data
             if (combinedData.authors && combinedData.authors.length > 0) {
@@ -67,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             progressText.textContent = message;
             document.getElementById('progress-container').style.backgroundColor = request.stopped ? '#f8d7da' : '#d4edda'; // Red if stopped, green if complete
             calculateAndDisplayTotals(allData); // Calculate and display totals
+            calculateAndDisplayHighRoyaltyTotals(allData); // Calculate and display high royalty totals
             
             // Show export button
             document.getElementById('exportData').style.display = 'inline-block';
@@ -160,6 +173,22 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td id="pct-editorial-reviews">0.00%</td>
                     <td id="avg-royalty-unit">$0.00</td>
                     <td id="total-royalty-month">$0</td>
+                    <td></td> <!-- Publisher -->
+                </tr>
+                <tr id="high-royalty-totals-row" style="font-weight: bold; background-color: #e8f5e8;">
+                    <td colspan="6">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span> books</td>
+                    <td id="high-total-reviews">0</td>
+                    <td id="high-avg-rating">0.00</td>
+                    <td id="high-total-review-images">0</td>
+                    <td id="high-avg-formats">0.0</td>
+                    <td id="high-avg-bsr">N/A</td>
+                    <td id="high-avg-days">N/A</td>
+                    <td id="high-pct-large-trim">0.00%</td>
+                    <td id="high-avg-aplus">0.0</td>
+                    <td id="high-avg-ugc-videos">0.0</td>
+                    <td id="high-pct-editorial-reviews">0.00%</td>
+                    <td id="high-avg-royalty-unit">$0.00</td>
+                    <td id="high-total-royalty-month">$0</td>
                     <td></td> <!-- Publisher -->
                 </tr>
             </tfoot>
@@ -363,6 +392,133 @@ function calculateAndDisplayTotals(allData) {
 
     const pctEditorialReviews = totals.totalProducts > 0 ? Math.round((totals.editorialReviewsYesCount / totals.totalProducts) * 100) + '%' : '0%';
     document.getElementById('pct-editorial-reviews').textContent = pctEditorialReviews;
+}
+
+function calculateAndDisplayHighRoyaltyTotals(allData) {
+    const get = (p, o) => p.reduce((xs, x) => (xs && xs[x] !== undefined && xs[x] !== null) ? xs[x] : null, o);
+    
+    // Filter for books with monthly royalty >= $500
+    const highRoyaltyBooks = allData.filter(data => {
+        if (!data) return false;
+        const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
+        return royaltyMonth !== null && royaltyMonth !== undefined && royaltyMonth >= 500;
+    });
+    
+    const highTotals = {
+        reviewsSum: 0,
+        reviewsCount: 0,
+        ratingSum: 0,
+        ratingCount: 0,
+        reviewImagesSum: 0,
+        reviewImagesCount: 0,
+        bsrSum: 0,
+        bsrCount: 0,
+        daysSum: 0,
+        daysCount: 0,
+        aplusSum: 0,
+        aplusCount: 0,
+        ugcVideos: 0,
+        ugcCount: 0,
+        royaltyUnitSum: 0,
+        royaltyUnitCount: 0,
+        royaltyMonthSum: 0,
+        royaltyMonthCount: 0,
+        formatSum: 0,
+        formatCount: 0,
+        largeTrimYesCount: 0,
+        editorialReviewsYesCount: 0,
+        totalProducts: 0,
+    };
+    
+    for (const data of highRoyaltyBooks) {
+        if (!data) continue;
+        
+        const reviewCount = get(['reviewCount'], data);
+        const avgRating = get(['customer_reviews', 'average_rating'], data);
+        const reviewImages = get(['customer_reviews', 'review_image_count'], data);
+        const bsr = get(['product_details', 'bsr'], data);
+        const days = get(['product_details', 'days_on_market'], data);
+        const aplus = get(['aplus_content', 'modulesCount'], data);
+        const ugc = get(['ugc_videos', 'video_count'], data);
+        const royaltyUnit = get(['royalties', 'royalty_per_unit'], data);
+        const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
+        const formatCount = get(['formats'], data)?.length || 0;
+        const largeTrim = get(['product_details', 'large_trim'], data);
+        const editorialReviews = get(['editorial_reviews'], data);
+        
+        if (reviewCount !== null && reviewCount !== undefined) {
+            highTotals.reviewsSum += reviewCount;
+            highTotals.reviewsCount++;
+        }
+        if (avgRating) {
+            highTotals.ratingSum += avgRating;
+            highTotals.ratingCount++;
+        }
+        if (reviewImages !== null && reviewImages !== undefined) {
+            highTotals.reviewImagesSum += reviewImages;
+            highTotals.reviewImagesCount++;
+        }
+        if (bsr) {
+            highTotals.bsrSum += bsr;
+            highTotals.bsrCount++;
+        }
+        if (days) {
+            highTotals.daysSum += days;
+            highTotals.daysCount++;
+        }
+        if (aplus) {
+            highTotals.aplusSum += aplus;
+            highTotals.aplusCount++;
+        }
+        if (ugc !== null && ugc !== undefined) {
+            highTotals.ugcVideos += ugc;
+            highTotals.ugcCount++;
+        }
+        if (royaltyUnit) {
+            highTotals.royaltyUnitSum += royaltyUnit;
+            highTotals.royaltyUnitCount++;
+        }
+        if (royaltyMonth !== null && royaltyMonth !== undefined) {
+            highTotals.royaltyMonthSum += royaltyMonth;
+            highTotals.royaltyMonthCount++;
+        }
+        
+        if (formatCount) {
+            highTotals.formatSum += formatCount;
+            highTotals.formatCount++;
+        }
+        if (largeTrim) {
+            highTotals.largeTrimYesCount++;
+        }
+        if (editorialReviews && Object.keys(editorialReviews).length > 0) {
+            highTotals.editorialReviewsYesCount++;
+        }
+        highTotals.totalProducts++;
+    }
+    
+    // Update the high royalty count
+    document.getElementById('high-royalty-count').textContent = highTotals.totalProducts;
+    
+    // Update all the high royalty totals
+    document.getElementById('high-total-reviews').textContent = (highTotals.reviewsCount > 0 ? Math.round(highTotals.reviewsSum / highTotals.reviewsCount).toLocaleString() : '0');
+    document.getElementById('high-avg-rating').textContent = (highTotals.ratingCount > 0 ? (highTotals.ratingSum / highTotals.ratingCount).toFixed(2) : '0.00');
+    document.getElementById('high-total-review-images').textContent = (highTotals.reviewImagesCount > 0 ? Math.round(highTotals.reviewImagesSum / highTotals.reviewImagesCount).toLocaleString() : '0');
+    document.getElementById('high-avg-bsr').textContent = (highTotals.bsrCount > 0 ? Math.round(highTotals.bsrSum / highTotals.bsrCount).toLocaleString() : 'N/A');
+    document.getElementById('high-avg-days').textContent = (highTotals.daysCount > 0 ? Math.round(highTotals.daysSum / highTotals.daysCount).toLocaleString() : 'N/A');
+    document.getElementById('high-avg-aplus').textContent = (highTotals.aplusCount > 0 ? (highTotals.aplusSum / highTotals.aplusCount).toFixed(1) : '0.0');
+    document.getElementById('high-avg-ugc-videos').textContent = (highTotals.ugcCount > 0 ? (highTotals.ugcVideos / highTotals.ugcCount).toFixed(1) : '0.0');
+    document.getElementById('high-avg-royalty-unit').textContent = (highTotals.royaltyUnitCount > 0 ? `$${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : '$0.00');
+    document.getElementById('high-total-royalty-month').textContent = (highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum / highTotals.royaltyMonthCount).toLocaleString()}` : '$0');
+    
+    // New calculations for high royalty books
+    const highAvgFormats = highTotals.formatCount > 0 ? (highTotals.formatSum / highTotals.formatCount).toFixed(1) : '0.0';
+    document.getElementById('high-avg-formats').textContent = highAvgFormats;
+    
+    const highPctLargeTrim = highTotals.totalProducts > 0 ? Math.round((highTotals.largeTrimYesCount / highTotals.totalProducts) * 100) + '%' : '0%';
+    document.getElementById('high-pct-large-trim').textContent = highPctLargeTrim;
+    
+    const highPctEditorialReviews = highTotals.totalProducts > 0 ? Math.round((highTotals.editorialReviewsYesCount / highTotals.totalProducts) * 100) + '%' : '0%';
+    document.getElementById('high-pct-editorial-reviews').textContent = highPctEditorialReviews;
 }
 
 // Add export functionality

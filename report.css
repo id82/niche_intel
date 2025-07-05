@@ -88,3 +88,19 @@ th:nth-child(n+7), td:nth-child(n+7) {
 #totals-row td:first-child {
     text-align: left;
 }
+
+/* Styling for high royalty totals row */
+#high-royalty-totals-row {
+    background-color: #e8f5e8 !important;
+    border-top: 2px solid #28a745;
+}
+
+/* Right align all numeric cells in high royalty totals row */
+#high-royalty-totals-row td {
+    text-align: right;
+}
+
+/* Keep the first column (label) left aligned in high royalty totals row */
+#high-royalty-totals-row td:first-child {
+    text-align: left;
+}
