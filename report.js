@@ -106,6 +106,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <th>ASIN</th>
                     <th>Cover</th>
                     <th>Title & Author</th>
+                    <th>Price</th>
                     <th>Reviews</th>
                     <th>Avg Rating</th>
                     <th>Review Images</th>
@@ -143,6 +144,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <div class="title">${product.title || 'N/A'}</div>
                     <div class="author">${(product.authors && product.authors.length > 0) ? product.authors.join(', ') : 'N/A'}</div>
                 </td>
+                <td id="price-${asin}" class="placeholder">...</td>
                 <td>${(product.reviewCount || 0).toLocaleString()}</td>
                 <td id="rating-${asin}" class="placeholder">...</td>
                 <td id="review-images-${asin}" class="placeholder">...</td>
@@ -165,6 +167,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
             <tfoot>
                 <tr id="totals-row" style="font-weight: bold;">
                     <td colspan="6">Totals / Averages</td>
+                    <td id="avg-price">$0.00</td>
                     <td id="total-reviews">0</td>
                     <td id="avg-rating">0.00</td>
                     <td id="total-review-images">0</td>
@@ -181,6 +184,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                 </tr>
                 <tr id="high-royalty-totals-row" style="font-weight: bold; background-color: #e8f5e8;">
                     <td colspan="6">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span> books</td>
+                    <td id="high-avg-price">$0.00</td>
                     <td id="high-total-reviews">0</td>
                     <td id="high-avg-rating">0.00</td>
                     <td id="high-total-review-images">0</td>
@@ -259,6 +263,31 @@ function updateTableRow(asin, data) {
     updateCell(`ugc-videos-${asin}`, ugcVideoCount, val => val || 0);
     updateCell(`editorial-reviews-${asin}`, editorialReviews, val => (val && Object.keys(val).length > 0) ? 'Yes' : 'No');
     
+    // Update price cell with list price and discount handling
+    const formats = get(['formats'], data);
+    let priceDisplay = 'N/A';
+    if (formats && formats.length > 0) {
+        // Find the selected format or use the first one
+        const selectedFormat = formats.find(f => f.isSelected) || formats[0];
+        if (selectedFormat && selectedFormat.prices && selectedFormat.prices.length > 0) {
+            const prices = selectedFormat.prices.sort((a, b) => a.price - b.price);
+            const listPrice = prices.find(p => p.type === 'list_price')?.price || prices[prices.length - 1].price;
+            const lowestPrice = prices[0].price;
+            
+            if (listPrice && lowestPrice && lowestPrice < listPrice) {
+                const discount = Math.round(((listPrice - lowestPrice) / listPrice) * 100);
+                priceDisplay = `$${listPrice.toFixed(2)}<br>$${lowestPrice.toFixed(2)}(-${discount}%)`;
+            } else if (listPrice) {
+                priceDisplay = `$${listPrice.toFixed(2)}`;
+            }
+        }
+    }
+    const priceCell = document.getElementById(`price-${asin}`);
+    if (priceCell) {
+        priceCell.innerHTML = priceDisplay;
+        priceCell.classList.remove('placeholder');
+    }
+    
     const royaltyUnitCell = document.getElementById(`royalty-unit-${asin}`);
     if (royaltyUnitCell) {
         if(data.royalties && data.royalties.error) {
@@ -306,6 +335,8 @@ function calculateAndDisplayTotals(allData) {
         royaltyMonthCount: 0,
         formatSum: 0,
         formatCount: 0,
+        priceSum: 0,
+        priceCount: 0,
         largeTrimYesCount: 0,
         editorialReviewsYesCount: 0,
         totalProducts: 0,
@@ -326,6 +357,17 @@ function calculateAndDisplayTotals(allData) {
         const formatCount = get(['formats'], data)?.length || 0;
         const largeTrim = get(['product_details', 'large_trim'], data);
         const editorialReviews = get(['editorial_reviews'], data);
+        
+        // Extract price for averaging
+        const formats = get(['formats'], data);
+        let price = null;
+        if (formats && formats.length > 0) {
+            const selectedFormat = formats.find(f => f.isSelected) || formats[0];
+            if (selectedFormat && selectedFormat.prices && selectedFormat.prices.length > 0) {
+                const listPrice = selectedFormat.prices.find(p => p.type === 'list_price')?.price;
+                price = listPrice || selectedFormat.prices[0].price;
+            }
+        }
 
         if (reviewCount !== null && reviewCount !== undefined) {
             totals.reviewsSum += reviewCount;
@@ -368,6 +410,10 @@ function calculateAndDisplayTotals(allData) {
             totals.formatSum += formatCount;
             totals.formatCount++;
         }
+        if (price !== null && price !== undefined) {
+            totals.priceSum += price;
+            totals.priceCount++;
+        }
         if (largeTrim) {
             totals.largeTrimYesCount++;
         }
@@ -377,6 +423,7 @@ function calculateAndDisplayTotals(allData) {
         totals.totalProducts++;
     }
 
+    document.getElementById('avg-price').textContent = (totals.priceCount > 0 ? `$${(totals.priceSum / totals.priceCount).toFixed(2)}` : '$0.00');
     document.getElementById('total-reviews').textContent = (totals.reviewsCount > 0 ? Math.round(totals.reviewsSum / totals.reviewsCount).toLocaleString() : '0');
     document.getElementById('avg-rating').textContent = (totals.ratingCount > 0 ? (totals.ratingSum / totals.ratingCount).toFixed(2) : '0.00');
     document.getElementById('total-review-images').textContent = (totals.reviewImagesCount > 0 ? Math.round(totals.reviewImagesSum / totals.reviewImagesCount).toLocaleString() : '0');
@@ -429,6 +476,8 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         royaltyMonthCount: 0,
         formatSum: 0,
         formatCount: 0,
+        priceSum: 0,
+        priceCount: 0,
         largeTrimYesCount: 0,
         editorialReviewsYesCount: 0,
         totalProducts: 0,
@@ -449,6 +498,17 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         const formatCount = get(['formats'], data)?.length || 0;
         const largeTrim = get(['product_details', 'large_trim'], data);
         const editorialReviews = get(['editorial_reviews'], data);
+        
+        // Extract price for high royalty averaging
+        const formats = get(['formats'], data);
+        let price = null;
+        if (formats && formats.length > 0) {
+            const selectedFormat = formats.find(f => f.isSelected) || formats[0];
+            if (selectedFormat && selectedFormat.prices && selectedFormat.prices.length > 0) {
+                const listPrice = selectedFormat.prices.find(p => p.type === 'list_price')?.price;
+                price = listPrice || selectedFormat.prices[0].price;
+            }
+        }
         
         if (reviewCount !== null && reviewCount !== undefined) {
             highTotals.reviewsSum += reviewCount;
@@ -491,6 +551,10 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
             highTotals.formatSum += formatCount;
             highTotals.formatCount++;
         }
+        if (price !== null && price !== undefined) {
+            highTotals.priceSum += price;
+            highTotals.priceCount++;
+        }
         if (largeTrim) {
             highTotals.largeTrimYesCount++;
         }
@@ -504,6 +568,7 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     document.getElementById('high-royalty-count').textContent = highTotals.totalProducts;
     
     // Update all the high royalty totals
+    document.getElementById('high-avg-price').textContent = (highTotals.priceCount > 0 ? `$${(highTotals.priceSum / highTotals.priceCount).toFixed(2)}` : '$0.00');
     document.getElementById('high-total-reviews').textContent = (highTotals.reviewsCount > 0 ? Math.round(highTotals.reviewsSum / highTotals.reviewsCount).toLocaleString() : '0');
     document.getElementById('high-avg-rating').textContent = (highTotals.ratingCount > 0 ? (highTotals.ratingSum / highTotals.ratingCount).toFixed(2) : '0.00');
     document.getElementById('high-total-review-images').textContent = (highTotals.reviewImagesCount > 0 ? Math.round(highTotals.reviewImagesSum / highTotals.reviewImagesCount).toLocaleString() : '0');

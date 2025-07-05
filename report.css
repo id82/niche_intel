@@ -80,7 +80,7 @@ tr:nth-child(even) {
     font-style: italic;
 }
 
-/* Right align columns from Reviews onwards */
+/* Right align columns from Price onwards */
 th:nth-child(n+7), td:nth-child(n+7) {
     text-align: center;
 }
