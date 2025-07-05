@@ -60,7 +60,7 @@ tr:nth-child(even) {
 }
 
 .cover-image {
-    max-width: 60px;
+    max-width: 50px;
     height: auto;
 }
 
