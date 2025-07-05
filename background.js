@@ -90,8 +90,15 @@ async function startAnalysis(activeTab) {
             return; // Exit gracefully if no products are found.
         }
 
+        // Sort ASINs by their earliest position on the page
+        const sortedAsins = allAsins.sort((a, b) => {
+            const posA = serpData.positions[a] ? Math.min(...serpData.positions[a].map(p => p.position)) : 999;
+            const posB = serpData.positions[b] ? Math.min(...serpData.positions[b].map(p => p.position)) : 999;
+            return posA - posB;
+        });
+
         // --- TESTING CONSTRAINT: Only process the first 10 ASINs ---
-        const asinsToProcess = allAsins.slice(0, 10);
+        const asinsToProcess = sortedAsins.slice(0, 10);
         console.log(`background.js: Total ASINs found: ${allAsins.length}. Processing first ${asinsToProcess.length} concurrently in batches of 5.`);
 
         // 4. Store initial data and create the report tab

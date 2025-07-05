@@ -126,12 +126,16 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
 
     for (const asin of asinsToProcess) {
         const product = productInfo[asin] || {};
-        const placement = positions[asin] ? positions[asin][0] : { position: 'N/A', type: 'N/A' };
+        const placements = positions[asin] || [];
+        
+        // Get the earliest position and collect all placement types
+        const earliestPosition = placements.length > 0 ? Math.min(...placements.map(p => p.position)) : 'N/A';
+        const allTypes = placements.length > 0 ? [...new Set(placements.map(p => p.type))].join(', ') : 'N/A';
 
         tableHTML += `
             <tr data-asin="${asin}">
-                <td>${placement.position}</td>
-                <td>${placement.type}</td>
+                <td>${earliestPosition}</td>
+                <td>${allTypes}</td>
                 <td id="badge-${asin}" class="placeholder">...</td>
                 <td><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
                 <td><img src="${product.coverUrl || ''}" class="cover-image"/></td>
