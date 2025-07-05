@@ -1006,7 +1006,8 @@ function runFullProductPageExtraction() {
             console.log(`scrapers.js: Applied VAT: ${VAT.toFixed(2)}. Price after VAT: ${price_after_vat.toFixed(2)}`);
         }
         
-        const royalty_amount = parseFloat((price_after_vat * royalty_rate - printing_cost).toFixed(2));
+        const calculated_royalty = price_after_vat * royalty_rate - printing_cost;
+        const royalty_amount = Math.max(0, parseFloat(calculated_royalty.toFixed(2))); // Ensure non-negative royalty
         const daily_sales = estimateSales(bsr, book_type, market_code);
         const monthly_sales = Math.round(daily_sales * 30);
         function customRoundRoyalty(value) {
