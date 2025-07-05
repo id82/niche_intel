@@ -1,0 +1,428 @@
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("report.js: DOM fully loaded and parsed.");
+    const tableContainer = document.getElementById('table-container');
+    const progressText = document.getElementById('progress-text');
+
+    console.log("report.js: Loading initial data from local storage.");
+    const { serpData, asinsToProcess, currentDomain } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain']);
+
+    if (!serpData || !asinsToProcess) {
+        console.error("report.js: Could not load initial data from storage.");
+        tableContainer.innerHTML = '<p>Error: Could not load initial data from storage. Please try again.</p>';
+        progressText.textContent = 'Error: Could not load data. Please restart the analysis.';
+        return;
+    }
+    
+    console.log("report.js: Initial data loaded successfully.", { serpData, asinsToProcess });
+    let processedCount = 0;
+    const totalToProcess = asinsToProcess.length;
+    let allData = []; // To store data for all processed ASINs
+
+    progressText.textContent = `Progress: ${processedCount} / ${totalToProcess} products analyzed.`;
+
+    renderInitialTable(serpData, asinsToProcess, tableContainer, currentDomain);
+
+    // Listen for messages from the background script
+    console.log("report.js: Adding message listener for updates from background script.");
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        console.log("report.js: Received message from background script:", request);
+        if (request.command === "update-row") {
+            console.log(`report.js: Updating row for ASIN ${request.asin}.`);
+            const rowData = { ...request.data, asin: request.asin };
+            // Also add the initial product info from SERP data to have all data in one place
+            const initialProductInfo = serpData.productInfo[request.asin] || {};
+            const combinedData = { ...initialProductInfo, ...rowData };
+            
+            // Update author info if the individual page has better data
+            if (rowData.author_info && rowData.author_info.name && 
+                (!initialProductInfo.authors || initialProductInfo.authors.length === 0)) {
+                combinedData.authors = [rowData.author_info.name];
+            }
+            
+            updateTableRow(request.asin, combinedData);
+            allData.push(combinedData); // Add data to the array
+            
+            // Update the author display in the table if we have better data
+            if (combinedData.authors && combinedData.authors.length > 0) {
+                const authorDiv = document.querySelector(`tr[data-asin="${request.asin}"] .author`);
+                if (authorDiv) {
+                    authorDiv.textContent = combinedData.authors.join(', ');
+                }
+            }
+            processedCount++;
+            progressText.textContent = `Progress: ${processedCount} / ${totalToProcess} products analyzed (processing in batches of 5).`;
+    
+    // Update progress bar if we have one
+    const progressBar = document.getElementById('progress-bar');
+    if (progressBar) {
+        const percentage = Math.round((processedCount / totalToProcess) * 100);
+        progressBar.style.width = percentage + '%';
+        progressBar.textContent = percentage + '%';
+    }
+        } else if (request.command === "analysis-complete") {
+            console.log("report.js: Received analysis complete message.");
+            const message = request.stopped ? 
+                `Analysis Stopped! ${processedCount} of ${totalToProcess} products were processed.` :
+                `Analysis Complete! All ${totalToProcess} products have been processed.`;
+            progressText.textContent = message;
+            document.getElementById('progress-container').style.backgroundColor = request.stopped ? '#f8d7da' : '#d4edda'; // Red if stopped, green if complete
+            calculateAndDisplayTotals(allData); // Calculate and display totals
+            
+            // Show export button
+            document.getElementById('exportData').style.display = 'inline-block';
+            
+            // Clean up - clear stored data to prevent memory leaks
+            chrome.storage.local.remove(['serpData', 'asinsToProcess', 'currentDomain'])
+                .then(() => console.log("report.js: Cleaned up storage after analysis completion"))
+                .catch(err => console.warn("report.js: Failed to clean up storage:", err));
+        }
+    });
+});
+
+function renderInitialTable(serpData, asinsToProcess, container, currentDomain) {
+    console.log("report.js: Rendering initial table.");
+    const { productInfo, positions } = serpData;
+    
+    let tableHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Type</th>
+                    <th>Badge</th>
+                    <th>ASIN</th>
+                    <th>Cover</th>
+                    <th>Title & Author</th>
+                    <th>Reviews</th>
+                    <th>Avg Rating</th>
+                    <th>Review Images</th>
+                    <th>Formats</th>
+                    <th>BSR</th>
+                    <th>Days on Market</th>
+                    <th>Large Trim</th>
+                    <th>A+ Modules</th>
+                    <th>UGC Videos</th>
+                    <th>Editorial Reviews</th>
+                    <th>Royalty/Book</th>
+                    <th>Royalty/Month</th>
+                    <th>Publisher</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    for (const asin of asinsToProcess) {
+        const product = productInfo[asin] || {};
+        const placement = positions[asin] ? positions[asin][0] : { position: 'N/A', type: 'N/A' };
+
+        tableHTML += `
+            <tr data-asin="${asin}">
+                <td>${placement.position}</td>
+                <td>${placement.type}</td>
+                <td id="badge-${asin}" class="placeholder">...</td>
+                <td><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
+                <td><img src="${product.coverUrl || ''}" class="cover-image"/></td>
+                <td>
+                    <div class="title">${product.title || 'N/A'}</div>
+                    <div class="author">${(product.authors && product.authors.length > 0) ? product.authors.join(', ') : 'N/A'}</div>
+                </td>
+                <td>${(product.reviewCount || 0).toLocaleString()}</td>
+                <td id="rating-${asin}" class="placeholder">...</td>
+                <td id="review-images-${asin}" class="placeholder">...</td>
+                <td id="formats-${asin}" class="placeholder">...</td>
+                <td id="bsr-${asin}" class="placeholder">...</td>
+                <td id="days-${asin}" class="placeholder">...</td>
+                <td id="trim-${asin}" class="placeholder">...</td>
+                <td id="aplus-${asin}" class="placeholder">...</td>
+                <td id="ugc-videos-${asin}" class="placeholder">...</td>
+                <td id="editorial-reviews-${asin}" class="placeholder">...</td>
+                <td id="royalty-unit-${asin}" class="placeholder">...</td>
+                <td id="royalty-month-${asin}" class="placeholder">...</td>
+                <td id="publisher-${asin}" class="placeholder">...</td>
+            </tr>
+        `;
+    }
+
+    tableHTML += `
+            </tbody>
+            <tfoot>
+                <tr id="totals-row" style="font-weight: bold;">
+                    <td colspan="6">Totals / Averages</td>
+                    <td id="total-reviews">0</td>
+                    <td id="avg-rating">0.00</td>
+                    <td id="total-review-images">0</td>
+                    <td id="avg-formats">0.0</td>
+                    <td id="avg-bsr">N/A</td>
+                    <td id="avg-days">N/A</td>
+                    <td id="pct-large-trim">0.00%</td>
+                    <td id="avg-aplus">0.0</td>
+                    <td id="avg-ugc-videos">0.0</td>
+                    <td id="pct-editorial-reviews">0.00%</td>
+                    <td id="avg-royalty-unit">$0.00</td>
+                    <td id="total-royalty-month">$0</td>
+                    <td></td> <!-- Publisher -->
+                </tr>
+            </tfoot>
+        </table>
+    `;
+    container.innerHTML = tableHTML;
+    console.log("report.js: Initial table rendered.");
+}
+
+function updateTableRow(asin, data) {
+    console.log(`report.js: Updating table row for ASIN ${asin} with data:`, data);
+    if (!data) {
+        console.warn(`report.js: No data provided for ASIN ${asin}. Highlighting row as failed.`);
+        document.querySelector(`tr[data-asin="${asin}"]`).style.backgroundColor = '#f8d7da'; // Highlight failed rows
+        return;
+    }
+    
+    const get = (p, o) => p.reduce((xs, x) => (xs && xs[x] !== undefined && xs[x] !== null) ? xs[x] : null, o);
+
+    const updateCell = (id, value, format) => {
+        const cell = document.getElementById(id);
+        if (cell) {
+            let displayValue = 'N/A';
+            if (value !== null) {
+                displayValue = format ? format(value) : value;
+            }
+            cell.textContent = displayValue;
+            cell.classList.remove('placeholder');
+        }
+    };
+
+    const badgeStatus = get(['badge_status'], data);
+    const formatCount = get(['formats'], data)?.length;
+    const avgRating = get(['customer_reviews', 'average_rating'], data);
+    const reviewImageCount = get(['customer_reviews', 'review_image_count'], data);
+    const bsr = get(['product_details', 'bsr'], data);
+    const daysOnMarket = get(['product_details', 'days_on_market'], data);
+    const publisher = get(['product_details', 'publisher'], data);
+    const largeTrim = get(['product_details', 'large_trim'], data);
+    const aplusCount = get(['aplus_content', 'modulesCount'], data);
+    const ugcVideoCount = get(['ugc_videos', 'video_count'], data);
+    const editorialReviews = get(['editorial_reviews'], data);
+    const royaltyUnit = get(['royalties', 'royalty_per_unit'], data);
+    const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
+
+    updateCell(`badge-${asin}`, badgeStatus, val => {
+        if (val === 'absent') return '';
+        const acronyms = {
+            'bestseller': 'BS',
+            'new-release': 'NR', 
+            'amazon-charts': 'AC',
+            'unknown': ''
+        };
+        return acronyms[val] || val.toUpperCase().substring(0, 2);
+    });
+    updateCell(`formats-${asin}`, formatCount, val => val || 0);
+    updateCell(`rating-${asin}`, avgRating, val => val || 0);
+    updateCell(`review-images-${asin}`, reviewImageCount, val => val || 0);
+    updateCell(`bsr-${asin}`, bsr, val => val ? val.toLocaleString() : 'N/A');
+    updateCell(`days-${asin}`, daysOnMarket, val => val !== null ? val.toLocaleString() : 'N/A');
+    updateCell(`publisher-${asin}`, publisher);
+    updateCell(`trim-${asin}`, largeTrim, val => val ? 'Yes' : 'No');
+    updateCell(`aplus-${asin}`, aplusCount, val => val || 0);
+    updateCell(`ugc-videos-${asin}`, ugcVideoCount, val => val || 0);
+    updateCell(`editorial-reviews-${asin}`, editorialReviews, val => (val && Object.keys(val).length > 0) ? 'Yes' : 'No');
+    
+    const royaltyUnitCell = document.getElementById(`royalty-unit-${asin}`);
+    if (royaltyUnitCell) {
+        if(data.royalties && data.royalties.error) {
+            royaltyUnitCell.textContent = 'N/A';
+        } else {
+            royaltyUnitCell.textContent = royaltyUnit !== null ? `$${royaltyUnit.toFixed(2)}` : 'N/A';
+        }
+        royaltyUnitCell.classList.remove('placeholder');
+    }
+
+    const royaltyMonthCell = document.getElementById(`royalty-month-${asin}`);
+    if (royaltyMonthCell) {
+        if(data.royalties && data.royalties.error) {
+            royaltyMonthCell.textContent = 'N/A';
+        } else {
+            royaltyMonthCell.textContent = royaltyMonth !== null ? `$${Math.round(royaltyMonth).toLocaleString()}` : 'N/A';
+        }
+        royaltyMonthCell.classList.remove('placeholder');
+    }
+    
+    console.log(`report.js: Row for ASIN ${asin} updated successfully.`);
+}
+
+function calculateAndDisplayTotals(allData) {
+    const get = (p, o) => p.reduce((xs, x) => (xs && xs[x] !== undefined && xs[x] !== null) ? xs[x] : null, o);
+
+    const totals = {
+        reviewsSum: 0,
+        reviewsCount: 0,
+        ratingSum: 0,
+        ratingCount: 0,
+        reviewImagesSum: 0,
+        reviewImagesCount: 0,
+        bsrSum: 0,
+        bsrCount: 0,
+        daysSum: 0,
+        daysCount: 0,
+        aplusSum: 0,
+        aplusCount: 0,
+        ugcVideos: 0,
+        ugcCount: 0,
+        royaltyUnitSum: 0,
+        royaltyUnitCount: 0,
+        royaltyMonthSum: 0,
+        royaltyMonthCount: 0,
+        formatSum: 0,
+        formatCount: 0,
+        largeTrimYesCount: 0,
+        editorialReviewsYesCount: 0,
+        totalProducts: 0,
+    };
+
+    for (const data of allData) {
+        if (!data) continue;
+
+        const reviewCount = get(['reviewCount'], data);
+        const avgRating = get(['customer_reviews', 'average_rating'], data);
+        const reviewImages = get(['customer_reviews', 'review_image_count'], data);
+        const bsr = get(['product_details', 'bsr'], data);
+        const days = get(['product_details', 'days_on_market'], data);
+        const aplus = get(['aplus_content', 'modulesCount'], data);
+        const ugc = get(['ugc_videos', 'video_count'], data);
+        const royaltyUnit = get(['royalties', 'royalty_per_unit'], data);
+        const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
+        const formatCount = get(['formats'], data)?.length || 0;
+        const largeTrim = get(['product_details', 'large_trim'], data);
+        const editorialReviews = get(['editorial_reviews'], data);
+
+        if (reviewCount !== null && reviewCount !== undefined) {
+            totals.reviewsSum += reviewCount;
+            totals.reviewsCount++;
+        }
+        if (avgRating) {
+            totals.ratingSum += avgRating;
+            totals.ratingCount++;
+        }
+        if (reviewImages !== null && reviewImages !== undefined) {
+            totals.reviewImagesSum += reviewImages;
+            totals.reviewImagesCount++;
+        }
+        if (bsr) {
+            totals.bsrSum += bsr;
+            totals.bsrCount++;
+        }
+        if (days) {
+            totals.daysSum += days;
+            totals.daysCount++;
+        }
+        if (aplus) {
+            totals.aplusSum += aplus;
+            totals.aplusCount++;
+        }
+        if (ugc !== null && ugc !== undefined) {
+            totals.ugcVideos += ugc;
+            totals.ugcCount++;
+        }
+        if (royaltyUnit) {
+            totals.royaltyUnitSum += royaltyUnit;
+            totals.royaltyUnitCount++;
+        }
+        if (royaltyMonth !== null && royaltyMonth !== undefined) {
+            totals.royaltyMonthSum += royaltyMonth;
+            totals.royaltyMonthCount++;
+        }
+
+        if (formatCount) {
+            totals.formatSum += formatCount;
+            totals.formatCount++;
+        }
+        if (largeTrim) {
+            totals.largeTrimYesCount++;
+        }
+        if (editorialReviews && Object.keys(editorialReviews).length > 0) {
+            totals.editorialReviewsYesCount++;
+        }
+        totals.totalProducts++;
+    }
+
+    document.getElementById('total-reviews').textContent = (totals.reviewsCount > 0 ? Math.round(totals.reviewsSum / totals.reviewsCount).toLocaleString() : '0');
+    document.getElementById('avg-rating').textContent = (totals.ratingCount > 0 ? (totals.ratingSum / totals.ratingCount).toFixed(2) : '0.00');
+    document.getElementById('total-review-images').textContent = (totals.reviewImagesCount > 0 ? Math.round(totals.reviewImagesSum / totals.reviewImagesCount).toLocaleString() : '0');
+    document.getElementById('avg-bsr').textContent = (totals.bsrCount > 0 ? Math.round(totals.bsrSum / totals.bsrCount).toLocaleString() : 'N/A');
+    document.getElementById('avg-days').textContent = (totals.daysCount > 0 ? Math.round(totals.daysSum / totals.daysCount).toLocaleString() : 'N/A');
+    document.getElementById('avg-aplus').textContent = (totals.aplusCount > 0 ? (totals.aplusSum / totals.aplusCount).toFixed(1) : '0.0');
+    document.getElementById('avg-ugc-videos').textContent = (totals.ugcCount > 0 ? (totals.ugcVideos / totals.ugcCount).toFixed(1) : '0.0');
+    document.getElementById('avg-royalty-unit').textContent = (totals.royaltyUnitCount > 0 ? `$${(totals.royaltyUnitSum / totals.royaltyUnitCount).toFixed(2)}` : '$0.00');
+    document.getElementById('total-royalty-month').textContent = (totals.royaltyMonthCount > 0 ? `$${Math.round(totals.royaltyMonthSum / totals.royaltyMonthCount).toLocaleString()}` : '$0');
+
+    // New calculations
+    const avgFormats = totals.formatCount > 0 ? (totals.formatSum / totals.formatCount).toFixed(1) : '0.0';
+    document.getElementById('avg-formats').textContent = avgFormats;
+
+    const pctLargeTrim = totals.totalProducts > 0 ? Math.round((totals.largeTrimYesCount / totals.totalProducts) * 100) + '%' : '0%';
+    document.getElementById('pct-large-trim').textContent = pctLargeTrim;
+
+    const pctEditorialReviews = totals.totalProducts > 0 ? Math.round((totals.editorialReviewsYesCount / totals.totalProducts) * 100) + '%' : '0%';
+    document.getElementById('pct-editorial-reviews').textContent = pctEditorialReviews;
+}
+
+// Add export functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const exportButton = document.getElementById('exportData');
+    if (exportButton) {
+        exportButton.addEventListener('click', () => {
+            exportToCSV();
+        });
+    }
+});
+
+function exportToCSV() {
+    console.log("report.js: Exporting data to CSV");
+    
+    // Get table data
+    const table = document.querySelector('table');
+    if (!table) {
+        alert('No data to export');
+        return;
+    }
+    
+    const rows = table.querySelectorAll('tr');
+    const csvData = [];
+    
+    // Process each row
+    rows.forEach((row, index) => {
+        const cells = row.querySelectorAll('th, td');
+        const rowData = [];
+        
+        cells.forEach(cell => {
+            let cellText = cell.textContent.trim();
+            // Handle links - extract just the text (ASIN)
+            const link = cell.querySelector('a');
+            if (link) {
+                cellText = link.textContent.trim();
+            }
+            // Escape quotes and wrap in quotes if contains comma
+            if (cellText.includes(',') || cellText.includes('"')) {
+                cellText = '"' + cellText.replace(/"/g, '""') + '"';
+            }
+            rowData.push(cellText);
+        });
+        
+        csvData.push(rowData.join(','));
+    });
+    
+    // Create CSV content
+    const csvContent = csvData.join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `amazon_serp_analysis_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    console.log("report.js: CSV export completed");
+}

@@ -1,0 +1,1 @@
+Make sure to increment the manifest.json version of this chrome extension every time you make an update.

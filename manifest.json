@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Amazon SERP Deep-Dive (Functional Test)",
+  "version": "1.49",
+  "description": "Performs SERP analysis and deep-dives on the first 10 products for testing.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "windows"
+  ],
+  "incognito": "split",
+  "host_permissions": [
+    "*://*.amazon.com/*",
+    "*://*.amazon.co.uk/*",
+    "*://*.amazon.de/*",
+    "*://*.amazon.fr/*",
+    "*://*.amazon.it/*",
+    "*://*.amazon.es/*",
+    "*://*.amazon.nl/*",
+    "*://*.amazon.com.au/*",
+    "*://*.amazon.co.jp/*",
+    "*://*.amazon.pl/*",
+    "*://*.amazon.se/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["report.html", "report.js", "report.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
