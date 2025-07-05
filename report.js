@@ -144,7 +144,19 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         
         // Get the earliest position and collect all placement types
         const earliestPosition = placements.length > 0 ? Math.min(...placements.map(p => p.position)) : 'N/A';
-        const allTypes = placements.length > 0 ? [...new Set(placements.map(p => p.type))].join(', ') : 'N/A';
+        const uniqueTypes = placements.length > 0 ? [...new Set(placements.map(p => p.type))] : [];
+        
+        // Format types as bubbles
+        let typesHTML = '';
+        if (uniqueTypes.length > 0) {
+            typesHTML = uniqueTypes.map(type => {
+                const className = type === 'organic' ? 'type-organic' : 
+                                 type === 'sponsored' ? 'type-sponsored' : 'type-mixed';
+                return `<span class="type-bubble ${className}">${type}</span>`;
+            }).join('');
+        } else {
+            typesHTML = 'N/A';
+        }
 
         // Get badge value for display
         const badgeText = product.badge_status ? 
@@ -156,7 +168,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         
         tableHTML += `
             <tr data-asin="${asin}">
-                <td>${allTypes}</td>
+                <td>${typesHTML}</td>
                 <td class="asin-cell"><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
                 <td><img src="${product.coverUrl || ''}" class="cover-image"/></td>
                 <td class="title-author-cell">
