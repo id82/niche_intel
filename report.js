@@ -620,9 +620,9 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     }).length;
     
     // Update the high royalty count with recent books info
-    const countText = recentBooksCount > 0 
-        ? `${highTotals.totalProducts} books - ${recentBooksCount} published in the last 90 days`
-        : highTotals.totalProducts === 0 ? '0 published in the last 90 days' : `${highTotals.totalProducts} books`;
+    const countText = highTotals.totalProducts > 0
+        ? `${highTotals.totalProducts} books (${recentBooksCount} with <90 days on market)`
+        : '0 books';
     document.getElementById('high-royalty-count').textContent = countText;
     
     // Update all the high royalty totals
