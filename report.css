@@ -63,17 +63,16 @@ tr:nth-child(even) {
     max-width: 50px;
     height: auto;
     cursor: pointer;
-    transition: all 0.3s ease;
     position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transform-origin: left center;
 }
 
 .cover-image:hover {
-    max-width: 220px;
+    transform: scale(4.4); /* 220px / 50px = 4.4 */
     z-index: 1000;
-    position: absolute;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     border-radius: 4px;
-    transform-origin: left center;
 }
 
 .title {
