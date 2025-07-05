@@ -82,12 +82,12 @@ tr:nth-child(even) {
 
 /* Right align columns from Reviews onwards */
 th:nth-child(n+7), td:nth-child(n+7) {
-    text-align: right;
+    text-align: center;
 }
 
 /* Right align all numeric cells in totals row */
 #totals-row td {
-    text-align: right;
+    text-align: center;
 }
 
 /* Keep the first column (label) left aligned in totals row */
@@ -103,7 +103,7 @@ th:nth-child(n+7), td:nth-child(n+7) {
 
 /* Right align all numeric cells in high royalty totals row */
 #high-royalty-totals-row td {
-    text-align: right;
+    text-align: center;
 }
 
 /* Keep the first column (label) left aligned in high royalty totals row */
