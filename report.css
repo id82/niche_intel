@@ -47,6 +47,12 @@ th, td {
 th {
     background-color: #f2f2f2;
     font-weight: 600;
+    text-align: center;
+}
+
+/* Keep Title & Author header left aligned */
+th:nth-child(6) {
+    text-align: left;
 }
 
 tr:nth-child(even) {
