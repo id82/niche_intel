@@ -78,6 +78,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `Analysis Complete! All ${totalToProcess} products have been processed.`;
             progressText.textContent = message;
             document.getElementById('progress-container').style.backgroundColor = request.stopped ? '#f8d7da' : '#d4edda'; // Red if stopped, green if complete
+            
+            // Collapse progress container after 3 seconds
+            setTimeout(() => {
+                const progressContainer = document.getElementById('progress-container');
+                progressContainer.style.transition = 'all 0.5s ease-out';
+                progressContainer.style.maxHeight = '0px';
+                progressContainer.style.padding = '0';
+                progressContainer.style.margin = '0';
+                progressContainer.style.overflow = 'hidden';
+            }, 3000);
+            
             calculateAndDisplayTotals(allData); // Calculate and display totals
             calculateAndDisplayHighRoyaltyTotals(allData); // Calculate and display high royalty totals
             
@@ -564,8 +575,20 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         highTotals.totalProducts++;
     }
     
-    // Update the high royalty count
-    document.getElementById('high-royalty-count').textContent = highTotals.totalProducts;
+    // Count books published in the last 90 days
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    
+    const recentBooksCount = highRoyaltyBooks.filter(data => {
+        const daysOnMarket = get(['product_details', 'days_on_market'], data);
+        return daysOnMarket !== null && daysOnMarket !== undefined && daysOnMarket <= 90;
+    }).length;
+    
+    // Update the high royalty count with recent books info
+    const countText = recentBooksCount > 0 
+        ? `${highTotals.totalProducts} books - ${recentBooksCount} published in the last 90 days`
+        : `${highTotals.totalProducts} books`;
+    document.getElementById('high-royalty-count').textContent = countText;
     
     // Update all the high royalty totals
     document.getElementById('high-avg-price').textContent = (highTotals.priceCount > 0 ? `$${(highTotals.priceSum / highTotals.priceCount).toFixed(2)}` : '$0.00');
