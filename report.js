@@ -49,8 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const combinedData = { ...initialProductInfo, ...rowData };
             
             // Update author info if the individual page has better data
-            if (rowData.author_info && rowData.author_info.name && 
-                (!initialProductInfo.authors || initialProductInfo.authors.length === 0)) {
+            if (rowData.author_info && rowData.author_info.name) {
                 combinedData.authors = [rowData.author_info.name];
             }
             
