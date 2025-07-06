@@ -3,6 +3,18 @@ let monitoredTabs = new Set();
 let analysisInProgress = false;
 let shouldStopAnalysis = false;
 
+// Initialize background script
+console.log("background.js: Service worker started/restarted");
+
+// Keep service worker alive
+chrome.runtime.onStartup.addListener(() => {
+    console.log("background.js: Extension startup detected");
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+    console.log("background.js: Extension installed/updated");
+});
+
 // Resource blocking for faster page loads
 const BLOCKING_RULE_ID = 1;
 let blockingEnabled = false;
@@ -56,7 +68,11 @@ async function disableResourceBlocking() {
 // Listens for the "start-analysis" command from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("background.js: Message received:", request.command);
+    
     if (request.command === "start-analysis") {
+        console.log("background.js: Processing start-analysis command");
+        
+        // Handle async operations properly
         (async () => {
             try {
                 if (analysisInProgress) {
@@ -115,9 +131,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 analysisInProgress = false;
                 
                 // Ensure resource blocking is disabled on error
-                await disableResourceBlocking();
+                try {
+                    await disableResourceBlocking();
+                } catch (cleanupError) {
+                    console.error("background.js: Error during cleanup:", cleanupError);
+                }
                 
-                sendResponse({ success: false, message: error.message });
+                sendResponse({ success: false, message: error.message || "Unknown error occurred" });
             }
         })();
         return true; // Necessary for async sendResponse
