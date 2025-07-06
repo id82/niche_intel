@@ -3,6 +3,55 @@ let monitoredTabs = new Set();
 let analysisInProgress = false;
 let shouldStopAnalysis = false;
 
+// Resource blocking for faster page loads
+const BLOCKING_RULE_ID = 1;
+let blockingEnabled = false;
+
+// Enable resource blocking for faster scraping
+async function enableResourceBlocking() {
+    if (blockingEnabled) return;
+    
+    console.log("background.js: Enabling resource blocking for faster scraping");
+    try {
+        const blockingRules = [{
+            id: BLOCKING_RULE_ID,
+            priority: 1,
+            action: { type: "block" },
+            condition: {
+                resourceTypes: ["image", "media"],
+                urlFilter: "*://*.amazon.*/*",
+                excludeInitiatorDomains: ["chrome-extension"]
+            }
+        }];
+        
+        await chrome.declarativeNetRequest.updateDynamicRules({
+            addRules: blockingRules
+        });
+        
+        blockingEnabled = true;
+        console.log("background.js: Resource blocking enabled successfully");
+    } catch (error) {
+        console.warn("background.js: Failed to enable resource blocking:", error);
+    }
+}
+
+// Disable resource blocking to restore normal browsing
+async function disableResourceBlocking() {
+    if (!blockingEnabled) return;
+    
+    console.log("background.js: Disabling resource blocking");
+    try {
+        await chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [BLOCKING_RULE_ID]
+        });
+        
+        blockingEnabled = false;
+        console.log("background.js: Resource blocking disabled successfully");
+    } catch (error) {
+        console.warn("background.js: Failed to disable resource blocking:", error);
+    }
+}
+
 // Listens for the "start-analysis" command from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.command === "start-analysis") {
@@ -42,6 +91,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 analysisInProgress = true;
                 shouldStopAnalysis = false;
+                
+                // Enable resource blocking for faster page loads
+                await enableResourceBlocking();
+                
                 console.log("background.js: Starting analysis on tab", activeTab.id);
                 await startAnalysis(activeTab); 
                 
@@ -50,6 +103,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             } catch (error) {
                 console.error("background.js: An error occurred during the analysis process:", error);
                 analysisInProgress = false;
+                
+                // Ensure resource blocking is disabled on error
+                await disableResourceBlocking();
+                
                 sendResponse({ success: false, message: error.message });
             }
         })();
@@ -58,6 +115,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log("background.js: Received 'stop-analysis' command.");
         shouldStopAnalysis = true;
         analysisInProgress = false;
+        
+        // Disable resource blocking
+        await disableResourceBlocking();
         
         // Close all monitored tabs
         const tabsToClose = Array.from(monitoredTabs);
@@ -147,6 +207,10 @@ async function startAnalysis(activeTab) {
         // Clean up any monitored tabs if analysis fails
         monitoredTabs.clear();
         analysisInProgress = false;
+        
+        // Ensure resource blocking is disabled on error
+        await disableResourceBlocking();
+        
         throw e;
     }
 }
@@ -365,6 +429,10 @@ async function processAsinQueue(asins, reportTabId, domain) {
 
     // 6. Send completion message after the loop finishes
     analysisInProgress = false;
+    
+    // Disable resource blocking when analysis completes
+    await disableResourceBlocking();
+    
     const completionMessage = shouldStopAnalysis ? "Analysis stopped by user." : "All ASINs processed.";
     console.log(`background.js: ${completionMessage}`);
     
