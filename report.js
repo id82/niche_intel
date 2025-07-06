@@ -74,6 +74,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     authorDiv.textContent = combinedData.authors.join(', ');
                 }
             }
+            
+            // Update checkbox functionality for new rows
+            const checkbox = document.querySelector(`input[data-asin="${request.asin}"]`);
+            if (checkbox && !checkbox.hasAttribute('data-listener-added')) {
+                checkbox.addEventListener('change', function() {
+                    updateSelectAllState();
+                    updateTotalsCalculations();
+                });
+                checkbox.setAttribute('data-listener-added', 'true');
+            }
             processedCount++;
             progressText.textContent = `Progress: ${processedCount} / ${totalToProcess} products analyzed (processing in batches of 5).`;
     
@@ -137,25 +147,26 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         <table>
             <thead>
                 <tr>
-                    <th class="sortable" data-column="0" data-type="text">Type</th>
-                    <th class="sortable" data-column="1" data-type="text">ASIN</th>
+                    <th><input type="checkbox" id="select-all-checkbox" checked> Select</th>
+                    <th class="sortable" data-column="1" data-type="text">Type</th>
+                    <th class="sortable" data-column="2" data-type="text">ASIN</th>
                     <th>Cover</th>
                     <th>Title & Author</th>
-                    <th class="sortable" data-column="4" data-type="number">Price</th>
-                    <th class="sortable" data-column="5" data-type="number">Reviews</th>
-                    <th class="sortable" data-column="6" data-type="number">Avg Rating</th>
-                    <th class="sortable" data-column="7" data-type="number">Review Images</th>
-                    <th class="sortable" data-column="8" data-type="number">Formats</th>
-                    <th class="sortable" data-column="9" data-type="bsr">BSR</th>
-                    <th class="sortable" data-column="10" data-type="number">Days on Market</th>
-                    <th class="sortable" data-column="11" data-type="number">Length</th>
-                    <th class="sortable" data-column="12" data-type="text">Large Trim</th>
-                    <th class="sortable" data-column="13" data-type="number">A+ Modules</th>
-                    <th class="sortable" data-column="14" data-type="number">UGC Videos</th>
-                    <th class="sortable" data-column="15" data-type="text">Editorial Reviews</th>
-                    <th class="sortable" data-column="16" data-type="number">Royalty/Book</th>
-                    <th class="sortable" data-column="17" data-type="royalty">Royalty/Month</th>
-                    <th class="sortable" data-column="18" data-type="text">Publisher</th>
+                    <th class="sortable" data-column="5" data-type="number">Price</th>
+                    <th class="sortable" data-column="6" data-type="number">Reviews</th>
+                    <th class="sortable" data-column="7" data-type="number">Avg Rating</th>
+                    <th class="sortable" data-column="8" data-type="number">Review Images</th>
+                    <th class="sortable" data-column="9" data-type="number">Formats</th>
+                    <th class="sortable" data-column="10" data-type="bsr">BSR</th>
+                    <th class="sortable" data-column="11" data-type="number">Days on Market</th>
+                    <th class="sortable" data-column="12" data-type="number">Length</th>
+                    <th class="sortable" data-column="13" data-type="text">Large Trim</th>
+                    <th class="sortable" data-column="14" data-type="number">A+ Modules</th>
+                    <th class="sortable" data-column="15" data-type="number">UGC Videos</th>
+                    <th class="sortable" data-column="16" data-type="text">Editorial Reviews</th>
+                    <th class="sortable" data-column="17" data-type="number">Royalty/Book</th>
+                    <th class="sortable" data-column="18" data-type="royalty">Royalty/Month</th>
+                    <th class="sortable" data-column="19" data-type="text">Publisher</th>
                 </tr>
             </thead>
             <tbody>
@@ -198,6 +209,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         
         tableHTML += `
             <tr data-asin="${asin}">
+                <td><input type="checkbox" class="row-checkbox" data-asin="${asin}" checked></td>
                 <td>${typesHTML}</td>
                 <td class="asin-cell"><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
                 <td><img src="${product.coverUrl || ''}" class="cover-image"/></td>
@@ -228,7 +240,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
             </tbody>
             <tfoot>
                 <tr id="totals-row" style="font-weight: bold;">
-                    <td colspan="4">Totals / Averages</td>
+                    <td colspan="5">Totals / Averages</td>
                     <td id="avg-price">$0.00</td>
                     <td id="total-reviews">0</td>
                     <td id="avg-rating">0.00</td>
@@ -246,7 +258,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td></td> <!-- Publisher -->
                 </tr>
                 <tr id="high-royalty-totals-row" style="font-weight: bold; background-color: #e8f5e8;">
-                    <td colspan="4">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span></td>
+                    <td colspan="5">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span></td>
                     <td id="high-avg-price">$0.00</td>
                     <td id="high-total-reviews">0</td>
                     <td id="high-avg-rating">0.00</td>
@@ -274,6 +286,9 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
     
     // Add sorting functionality
     addSortingFunctionality();
+    
+    // Add checkbox functionality
+    addCheckboxFunctionality();
     
 }
 
@@ -367,6 +382,75 @@ function getCellValue(cell, dataType) {
         default:
             return text;
     }
+}
+
+function addCheckboxFunctionality() {
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    
+    // Handle select all checkbox
+    selectAllCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        rowCheckboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
+        updateTotalsCalculations();
+    });
+    
+    // Handle individual row checkboxes
+    rowCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectAllState();
+            updateTotalsCalculations();
+        });
+    });
+    
+    // Initial calculation with all rows selected
+    updateTotalsCalculations();
+}
+
+function updateSelectAllState() {
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+    
+    if (checkedBoxes.length === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (checkedBoxes.length === rowCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+function updateTotalsCalculations() {
+    const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+    const selectedAsins = Array.from(checkedBoxes).map(cb => cb.dataset.asin);
+    
+    // Filter allData to only include selected rows
+    const selectedData = allData.filter(item => selectedAsins.includes(item.asin));
+    
+    if (selectedData.length === 0) {
+        // If no rows selected, clear totals
+        document.getElementById('avg-price').textContent = '$0.00';
+        document.getElementById('total-reviews').textContent = '0';
+        document.getElementById('avg-rating').textContent = '0.00';
+        document.getElementById('total-review-images').textContent = '0';
+        document.getElementById('total-formats').textContent = '0';
+        document.getElementById('avg-bsr').textContent = '0';
+        document.getElementById('avg-days').textContent = '0';
+        document.getElementById('avg-length').textContent = '0';
+        document.getElementById('avg-aplus').textContent = '0';
+        document.getElementById('avg-ugc-videos').textContent = '0';
+        document.getElementById('avg-royalty-unit').textContent = '$0.00';
+        document.getElementById('total-royalty-month').textContent = '$0';
+        return;
+    }
+    
+    // Calculate totals/averages for selected data
+    calculateAndDisplayTotals(selectedData);
 }
 
 function updateTableRow(asin, data) {
