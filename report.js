@@ -424,7 +424,13 @@ function updateTableRow(asin, data) {
     updateCell(`trim-${asin}`, largeTrim, val => val ? 'Yes' : 'No');
     updateCell(`aplus-${asin}`, aplusCount, val => val || 0);
     updateCell(`ugc-videos-${asin}`, ugcVideoCount, val => val || 0);
-    updateCell(`editorial-reviews-${asin}`, editorialReviews, val => (val && Object.keys(val).length > 0) ? 'Yes' : 'No');
+    // Handle editorial reviews specially to ensure "No" instead of "N/A"
+    const editorialReviewsCell = document.getElementById(`editorial-reviews-${asin}`);
+    if (editorialReviewsCell) {
+        const hasEditorialReviews = editorialReviews && Object.keys(editorialReviews).length > 0;
+        editorialReviewsCell.textContent = hasEditorialReviews ? 'Yes' : 'No';
+        editorialReviewsCell.classList.remove('placeholder');
+    }
     
     // Update price cell with list price and discount handling
     const formats = get(['formats'], data);
