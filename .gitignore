@@ -7,7 +7,6 @@
 
 # IDE/Editor files
 .vscode/
-.claude/
 .idea/
 *.swp
 *.swo
