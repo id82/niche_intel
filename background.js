@@ -31,7 +31,8 @@ async function enableResourceBlocking() {
         blockingEnabled = true;
         console.log("background.js: Resource blocking enabled successfully");
     } catch (error) {
-        console.warn("background.js: Failed to enable resource blocking:", error);
+        console.error("background.js: Failed to enable resource blocking:", error);
+        // Continue without blocking rather than failing completely
     }
 }
 
@@ -65,6 +66,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 console.log("background.js: Received 'start-analysis' command.");
                 const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                console.log("background.js: Active tab found:", activeTab?.url);
+                
                 if (!activeTab || !activeTab.url || !activeTab.url.includes("amazon.")) {
                     console.error("background.js: Not an Amazon page.");
                     sendResponse({ success: false, message: "Error: Not an Amazon page." });
@@ -73,6 +76,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 // Check if this is a search page (/s) with a keyword (k=)
                 const url = new URL(activeTab.url);
+                console.log("background.js: Checking URL path:", url.pathname, "and search params:", url.searchParams.has('k'));
+                
                 if (!url.pathname.includes('/s') || !url.searchParams.has('k')) {
                     console.error("background.js: Not an Amazon search page.");
                     sendResponse({ 
@@ -87,13 +92,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log(`background.js: Detected search keyword: "${keyword}"`);
                 
                 // Store keyword for use in report
+                console.log("background.js: Storing keyword in local storage");
                 await chrome.storage.local.set({ searchKeyword: keyword });
                 
                 analysisInProgress = true;
                 shouldStopAnalysis = false;
                 
                 // Enable resource blocking for faster page loads
+                console.log("background.js: About to enable resource blocking");
                 await enableResourceBlocking();
+                console.log("background.js: Resource blocking setup complete");
                 
                 console.log("background.js: Starting analysis on tab", activeTab.id);
                 await startAnalysis(activeTab); 
@@ -143,19 +151,23 @@ async function startAnalysis(activeTab) {
 
     // 2. Inject the scrapers and run the SERP analysis function
     try {
-        console.log("background.js: Injecting scrapers.js into tab", activeTab.id);
+        console.log("background.js: About to inject scrapers.js into tab", activeTab.id);
         await chrome.scripting.executeScript({
             target: { tabId: activeTab.id },
             files: ['scrapers.js']
         });
+        console.log("background.js: Scrapers.js injected successfully");
 
-        console.log("background.js: Executing runFullAmazonAnalysis in tab", activeTab.id);
+        console.log("background.js: About to execute runFullAmazonAnalysis in tab", activeTab.id);
         const injectionResults = await chrome.scripting.executeScript({
             target: { tabId: activeTab.id },
             func: () => runFullAmazonAnalysis(), // Correctly call the function in the tab's context
         });
+        console.log("background.js: runFullAmazonAnalysis executed, processing results");
         
         const serpData = injectionResults[0].result;
+        console.log("background.js: SERP data extracted:", serpData ? "Success" : "Failed", "- Product count:", serpData?.productInfo ? Object.keys(serpData.productInfo).length : 0);
+        
         if (!serpData || !serpData.productInfo) {
             throw new Error("Failed to extract SERP data.");
         }
@@ -180,26 +192,32 @@ async function startAnalysis(activeTab) {
         console.log(`background.js: Total ASINs found: ${allAsins.length}. Processing first ${asinsToProcess.length} concurrently in batches of 5.`);
 
         // 4. Store initial data and create the report tab
-        console.log("background.js: Storing SERP data and ASIN queue in local storage.");
+        console.log("background.js: About to store SERP data and ASIN queue in local storage.");
         const { searchKeyword } = await chrome.storage.local.get(['searchKeyword']);
+        console.log("background.js: Retrieved search keyword from storage:", searchKeyword);
+        
         await chrome.storage.local.set({ 
             serpData: serpData,
             asinsToProcess: asinsToProcess,
             currentDomain: domain,
             searchKeyword: searchKeyword
         });
+        console.log("background.js: Data stored in local storage successfully");
         
-        console.log("background.js: Creating report tab.");
+        console.log("background.js: About to create report tab.");
         // Check if we're in an incognito window and handle accordingly
         const currentWindow = await chrome.windows.get(activeTab.windowId);
+        console.log("background.js: Current window info:", currentWindow.incognito ? "incognito" : "normal");
+        
         const reportTab = await chrome.tabs.create({ 
             url: chrome.runtime.getURL('report.html'), 
             active: true,
             windowId: currentWindow.incognito ? activeTab.windowId : activeTab.windowId
         });
+        console.log("background.js: Report tab created successfully with ID:", reportTab.id);
         
         // 5. Start processing the ASIN queue in the background
-        console.log("background.js: Starting ASIN queue processing.");
+        console.log("background.js: About to start ASIN queue processing.");
         await processAsinQueue(asinsToProcess, reportTab.id, domain);
 
     } catch (e) {
