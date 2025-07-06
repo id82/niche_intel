@@ -148,7 +148,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         <table>
             <thead>
                 <tr>
-                    <th><input type="checkbox" id="select-all-checkbox" checked> Select</th>
+                    <th><input type="checkbox" id="select-all-checkbox"> Select</th>
                     <th class="sortable" data-column="1" data-type="text">Type</th>
                     <th class="sortable" data-column="2" data-type="text">ASIN</th>
                     <th>Cover</th>
@@ -210,7 +210,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         
         tableHTML += `
             <tr data-asin="${asin}">
-                <td><input type="checkbox" class="row-checkbox" data-asin="${asin}" checked></td>
+                <td><input type="checkbox" class="row-checkbox" data-asin="${asin}"></td>
                 <td>${typesHTML}</td>
                 <td class="asin-cell"><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
                 <td><img src="${product.coverUrl || ''}" class="cover-image"/></td>
@@ -426,6 +426,41 @@ function updateSelectAllState() {
     }
 }
 
+function clearTotalsRows() {
+    // Clear main totals row
+    document.getElementById('avg-price').textContent = '$0.00';
+    document.getElementById('total-reviews').textContent = '0';
+    document.getElementById('avg-rating').textContent = '0.00';
+    document.getElementById('total-review-images').textContent = '0';
+    document.getElementById('avg-formats').textContent = '0.0';
+    document.getElementById('avg-bsr').textContent = 'N/A';
+    document.getElementById('avg-days').textContent = 'N/A';
+    document.getElementById('avg-length').textContent = '0';
+    document.getElementById('pct-large-trim').textContent = '0%';
+    document.getElementById('avg-aplus').textContent = '0.0';
+    document.getElementById('avg-ugc-videos').textContent = '0.0';
+    document.getElementById('pct-editorial-reviews').textContent = '0%';
+    document.getElementById('avg-royalty-unit').textContent = '$0.00';
+    document.getElementById('total-royalty-month').textContent = '$0';
+    
+    // Clear high royalty totals row
+    document.getElementById('high-royalty-count').textContent = '0';
+    document.getElementById('high-avg-price').textContent = '$0.00';
+    document.getElementById('high-total-reviews').textContent = '0';
+    document.getElementById('high-avg-rating').textContent = '0.00';
+    document.getElementById('high-total-review-images').textContent = '0';
+    document.getElementById('high-avg-formats').textContent = '0.0';
+    document.getElementById('high-avg-bsr').textContent = 'N/A';
+    document.getElementById('high-avg-days').textContent = 'N/A';
+    document.getElementById('high-avg-length').textContent = '0';
+    document.getElementById('high-pct-large-trim').textContent = '0%';
+    document.getElementById('high-avg-aplus').textContent = '0.0';
+    document.getElementById('high-avg-ugc-videos').textContent = '0.0';
+    document.getElementById('high-pct-editorial-reviews').textContent = '0%';
+    document.getElementById('high-avg-royalty-unit').textContent = '$0.00';
+    document.getElementById('high-total-royalty-month').textContent = '$0';
+}
+
 function updateTotalsCalculations() {
     const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
     const selectedAsins = Array.from(checkedBoxes).map(cb => cb.dataset.asin);
@@ -434,24 +469,14 @@ function updateTotalsCalculations() {
     const selectedData = allData.filter(item => selectedAsins.includes(item.asin));
     
     if (selectedData.length === 0) {
-        // If no rows selected, clear totals
-        document.getElementById('avg-price').textContent = '$0.00';
-        document.getElementById('total-reviews').textContent = '0';
-        document.getElementById('avg-rating').textContent = '0.00';
-        document.getElementById('total-review-images').textContent = '0';
-        document.getElementById('total-formats').textContent = '0';
-        document.getElementById('avg-bsr').textContent = '0';
-        document.getElementById('avg-days').textContent = '0';
-        document.getElementById('avg-length').textContent = '0';
-        document.getElementById('avg-aplus').textContent = '0';
-        document.getElementById('avg-ugc-videos').textContent = '0';
-        document.getElementById('avg-royalty-unit').textContent = '$0.00';
-        document.getElementById('total-royalty-month').textContent = '$0';
+        // If no rows are selected, clear all totals using the helper function.
+        clearTotalsRows();
         return;
     }
     
-    // Calculate totals/averages for selected data
+    // Calculate and display totals for the selected data.
     calculateAndDisplayTotals(selectedData);
+    calculateAndDisplayHighRoyaltyTotals(selectedData);
 }
 
 function updateTableRow(asin, data) {
@@ -593,6 +618,8 @@ function calculateAndDisplayTotals(allData) {
         bsrCount: 0,
         daysSum: 0,
         daysCount: 0,
+        lengthSum: 0,                   // <-- FIXED: Initialize properties to prevent TypeError
+        lengthCount: 0,                 // <-- FIXED: Initialize properties to prevent TypeError
         aplusSum: 0,
         aplusCount: 0,
         ugcVideos: 0,
@@ -706,7 +733,7 @@ function calculateAndDisplayTotals(allData) {
     document.getElementById('avg-aplus').textContent = (totals.aplusCount > 0 ? (totals.aplusSum / totals.aplusCount).toFixed(1) : '0.0');
     document.getElementById('avg-ugc-videos').textContent = (totals.ugcCount > 0 ? (totals.ugcVideos / totals.ugcCount).toFixed(1) : '0.0');
     document.getElementById('avg-royalty-unit').textContent = (totals.royaltyUnitCount > 0 ? `$${(totals.royaltyUnitSum / totals.royaltyUnitCount).toFixed(2)}` : '$0.00');
-    document.getElementById('total-royalty-month').textContent = (totals.royaltyMonthCount > 0 ? `$${Math.round(totals.royaltyMonthSum / totals.royaltyMonthCount).toLocaleString()}` : '$0');
+    document.getElementById('total-royalty-month').textContent = (totals.royaltyMonthCount > 0 ? `$${Math.round(totals.royaltyMonthSum).toLocaleString()}` : '$0'); // <-- FIXED: Calculate SUM, not average
 
     // New calculations
     const avgFormats = totals.formatCount > 0 ? (totals.formatSum / totals.formatCount).toFixed(1) : '0.0';
@@ -740,8 +767,8 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         bsrCount: 0,
         daysSum: 0,
         daysCount: 0,
-        lengthSum: 0,
-        lengthCount: 0,
+        lengthSum: 0,                   // <-- FIXED: Initialize properties to prevent TypeError
+        lengthCount: 0,                 // <-- FIXED: Initialize properties to prevent TypeError
         aplusSum: 0,
         aplusCount: 0,
         ugcVideos: 0,
@@ -871,7 +898,7 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     document.getElementById('high-avg-aplus').textContent = (highTotals.aplusCount > 0 ? (highTotals.aplusSum / highTotals.aplusCount).toFixed(1) : '0.0');
     document.getElementById('high-avg-ugc-videos').textContent = (highTotals.ugcCount > 0 ? (highTotals.ugcVideos / highTotals.ugcCount).toFixed(1) : '0.0');
     document.getElementById('high-avg-royalty-unit').textContent = (highTotals.royaltyUnitCount > 0 ? `$${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : '$0.00');
-    document.getElementById('high-total-royalty-month').textContent = (highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum / highTotals.royaltyMonthCount).toLocaleString()}` : '$0');
+    document.getElementById('high-total-royalty-month').textContent = (highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum).toLocaleString()}` : '$0'); // <-- FIXED: Calculate SUM, not average
     
     // New calculations for high royalty books
     const highAvgFormats = highTotals.formatCount > 0 ? (highTotals.formatSum / highTotals.formatCount).toFixed(1) : '0.0';
