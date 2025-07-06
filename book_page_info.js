@@ -36,11 +36,16 @@ function extractBookData() {
     const data = {
         asin: extractASIN(),
         title: null,
+        listPrice: null,
         price: null,
         bsr: null,
         pageCount: null,
         largeTrim: false,
-        marketplace: window.location.hostname
+        marketplace: window.location.hostname,
+        reviewImages: 0,
+        aplusModules: 0,
+        ugcVideos: 0,
+        editorialReviews: false
     };
     
     // Extract title
@@ -49,24 +54,93 @@ function extractBookData() {
         data.title = titleElement.textContent.trim();
     }
     
-    // Extract price from various possible locations
-    const priceSelectors = [
-        '.a-price.a-text-price.a-size-medium.apexPriceToPay span.a-offscreen',
-        '.a-price.a-text-price.a-size-medium.apexPriceToPay .a-offscreen',
-        '.a-price .a-offscreen',
-        '#priceblock_dealprice',
-        '#priceblock_ourprice'
-    ];
-    
-    for (const selector of priceSelectors) {
-        const priceElement = document.querySelector(selector);
-        if (priceElement) {
-            const priceText = priceElement.textContent.trim();
-            const priceMatch = priceText.match(/[\d.]+/);
-            if (priceMatch) {
-                data.price = parseFloat(priceMatch[0]);
-                break;
+    // Extract prices using the same logic as scrapers.js extractAmazonBookFormats()
+    const cleanPrice = (text) => {
+        if (!text) return null;
+        const match = text.match(/(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
+        if (!match) return null;
+
+        let priceStr = match[0].replace(/[$,€£¥]/g, ''); // Remove currency symbols
+        if (priceStr.includes(',') && priceStr.includes('.')) {
+            if (priceStr.lastIndexOf(',') > priceStr.lastIndexOf('.')) {
+                priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+            } else {
+                priceStr = priceStr.replace(/,/g, '');
             }
+        } else {
+            priceStr = priceStr.replace(',', '.');
+        }
+        
+        const price = parseFloat(priceStr);
+        return isNaN(price) ? null : price;
+    };
+    
+    const prices = [];
+    
+    // Extract prices from tmm-grid-swatch elements (format selection area)
+    document.querySelectorAll('[id^="tmm-grid-swatch-"]').forEach(swatch => {
+        const isSelected = swatch.classList.contains('selected');
+        if (isSelected) {
+            // Extract price from selected format
+            const slotPrice = swatch.querySelector('.slot-price span[aria-label]');
+            if (slotPrice) {
+                const price = cleanPrice(slotPrice.getAttribute('aria-label'));
+                if (price !== null) {
+                    prices.push(price);
+                }
+            }
+            
+            // Check for Kindle extra message with additional price
+            const extraMessage = swatch.querySelector('.kindleExtraMessage');
+            if (extraMessage) {
+                const priceElement = extraMessage.querySelector('.a-color-price') || extraMessage.querySelector('span.a-color-price');
+                let additionalPrice = priceElement ? cleanPrice(priceElement.textContent) : cleanPrice(extraMessage.textContent);
+                if (additionalPrice !== null && !prices.includes(additionalPrice)) {
+                    prices.push(additionalPrice);
+                }
+            }
+        }
+    });
+    
+    // Extract strikethrough list price from core price display
+    const listPriceEl = document.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"] span');
+    if (listPriceEl) {
+        const listPrice = cleanPrice(listPriceEl.textContent);
+        if (listPrice && !prices.includes(listPrice)) {
+            prices.push(listPrice);
+        }
+    }
+    
+    // Fallback to legacy price selectors if no prices found
+    if (prices.length === 0) {
+        const legacySelectors = [
+            'span.a-price.a-text-price.a-size-medium.apexPriceToPay .a-offscreen',
+            '.a-price.a-text-price .a-offscreen',
+            '#listPrice .a-offscreen',
+            '#priceblock_listprice',
+            '#priceblock_ourprice',
+            '#priceblock_dealprice',
+            '.a-price .a-offscreen'
+        ];
+        
+        for (const selector of legacySelectors) {
+            const priceElement = document.querySelector(selector);
+            if (priceElement) {
+                const price = cleanPrice(priceElement.textContent);
+                if (price !== null && !prices.includes(price)) {
+                    prices.push(price);
+                }
+            }
+        }
+    }
+    
+    // Set prices using the same logic as scrapers.js
+    if (prices.length > 0) {
+        prices.sort((a, b) => a - b); // Sort ascending
+        data.price = prices[0]; // Lowest price is the current price
+        data.listPrice = prices[prices.length - 1]; // Highest price is the list price
+        if (prices.length > 2) {
+            console.log(`NicheIntel Pro: Found ${prices.length} prices, using lowest for current and highest for list:`, prices);
         }
     }
     
@@ -99,6 +173,25 @@ function extractBookData() {
     // This is a simplified check - in a real implementation you'd extract actual dimensions
     data.largeTrim = data.pageCount && data.pageCount > 300; // Simple heuristic
     
+    // Extract review images count using same logic as scrapers.js getReviewImageCount()
+    function getReviewImageCount() {
+        const firstCard = document.querySelector('#cm_cr_carousel_images_section .a-carousel-card[aria-setsize]');
+        return firstCard ? parseInt(firstCard.getAttribute('aria-setsize')) : document.querySelectorAll('#cm_cr_carousel_images_section .a-carousel-card').length;
+    }
+    data.reviewImages = getReviewImageCount();
+    
+    // Extract A+ content modules
+    const aplusElements = document.querySelectorAll('[data-aplus-module], .aplus-module, #aplus_feature_div .aplus-module');
+    data.aplusModules = aplusElements.length;
+    
+    // Extract UGC videos (simplified)
+    const ugcVideoElements = document.querySelectorAll('[data-video-url], .video-block, [data-hook="vse-video-block"]');
+    data.ugcVideos = ugcVideoElements.length;
+    
+    // Check for editorial reviews
+    const editorialElements = document.querySelectorAll('#editorialReviews_feature_div, [data-feature-name="editorialReviews"], .cr-editorial-review');
+    data.editorialReviews = editorialElements.length > 0;
+    
     console.log("NicheIntel Pro: Extracted book data:", data);
     return data;
 }
@@ -106,7 +199,7 @@ function extractBookData() {
 // Calculate monthly sales and royalty using the EXACT same logic as scrapers.js
 function calculateMonthlyMetrics(bookData) {
     if (!bookData.bsr || !bookData.price || !bookData.pageCount) {
-        return { monthlySales: null, monthlyRoyalty: null, dailySales: null, royaltyPerUnit: null };
+        return { monthlyRoyalty: null, royaltyPerUnit: null };
     }
     
     // Use the EXACT same BSR to sales estimation logic from scrapers.js
@@ -179,8 +272,6 @@ function calculateMonthlyMetrics(bookData) {
     const monthlyRoyalty = Math.round(royaltyPerUnit * monthlySales);
     
     return {
-        dailySales: dailySales,
-        monthlySales: monthlySales,
         royaltyPerUnit: royaltyPerUnit,
         monthlyRoyalty: monthlyRoyalty
     };
@@ -192,11 +283,8 @@ function createInfoTable(bookData, metrics) {
     const container = document.createElement('div');
     container.style.cssText = `
         background-color: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        margin: 20px 0;
-        padding: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 5px 0;
+        padding-bottom: 30px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     `;
     
@@ -226,7 +314,7 @@ function createInfoTable(bookData, metrics) {
         font-weight: 600;
         color: #1e293b;
     `;
-    title.innerHTML = `<a href="https://adigy.ai" target="_blank" style="color: #f59e0b; text-decoration: none;">NicheIntel Pro by Adigy.AI</a> - Ads Automation for Publishers`;
+    title.innerHTML = `<span style="color: #1e293b; text-decoration: none;">NicheIntel Pro by </span><a href="https://adigy.ai" target="_blank" style="color: #f59e0b; text-decoration: none;">Adigy.AI</a><span style="color: #1e293b; text-decoration: none;"> - Ads Automation for Publishers</span>`;
     
     header.appendChild(icon);
     header.appendChild(title);
@@ -240,15 +328,18 @@ function createInfoTable(bookData, metrics) {
         font-size: 14px;
     `;
     
-    // Create transposed table data (remove title, transpose to horizontal layout)
-    const labels = ['ASIN', 'Price', 'BSR', 'Pages', 'Daily Sales', 'Monthly Sales', 'Royalty/Unit', 'Monthly Royalty'];
+    // Create table data with reordered columns: Pages 3rd, Large Trim 9th
+    const labels = ['ASIN', 'Price', 'Pages', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'Royalty/Unit', 'Monthly Royalty'];
     const values = [
         bookData.asin || 'N/A',
-        bookData.price ? `$${bookData.price.toFixed(2)}` : 'N/A',
-        bookData.bsr ? bookData.bsr.toLocaleString() : 'N/A',
+        bookData.listPrice ? `$${bookData.listPrice.toFixed(2)}` : 'N/A',
         bookData.pageCount ? bookData.pageCount.toLocaleString() : 'N/A',
-        metrics.dailySales ? metrics.dailySales.toFixed(1) : 'N/A',
-        metrics.monthlySales ? metrics.monthlySales.toLocaleString() : 'N/A',
+        bookData.reviewImages || '0',
+        bookData.aplusModules || '0',
+        bookData.ugcVideos || '0',
+        bookData.editorialReviews ? 'Yes' : 'No',
+        bookData.bsr ? bookData.bsr.toLocaleString() : 'N/A',
+        bookData.largeTrim ? 'Yes' : 'No',
         metrics.royaltyPerUnit ? `$${metrics.royaltyPerUnit.toFixed(2)}` : 'N/A',
         metrics.monthlyRoyalty ? `$${metrics.monthlyRoyalty.toLocaleString()}` : 'N/A'
     ];

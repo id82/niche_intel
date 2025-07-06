@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Amazon SERP Deep-Dive (Functional Test)",
-  "version": "1.70",
+  "version": "1.73",
   "description": "Performs SERP analysis and deep-dives on the first 10 products for testing.",
   "permissions": [
     "activeTab",
@@ -33,17 +33,17 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.amazon.com/dp/*",
-        "*://*.amazon.co.uk/dp/*",
-        "*://*.amazon.de/dp/*",
-        "*://*.amazon.fr/dp/*",
-        "*://*.amazon.it/dp/*",
-        "*://*.amazon.es/dp/*",
-        "*://*.amazon.nl/dp/*",
-        "*://*.amazon.com.au/dp/*",
-        "*://*.amazon.co.jp/dp/*",
-        "*://*.amazon.pl/dp/*",
-        "*://*.amazon.se/dp/*"
+        "*://*.amazon.com/*",
+        "*://*.amazon.co.uk/*",
+        "*://*.amazon.de/*",
+        "*://*.amazon.fr/*",
+        "*://*.amazon.it/*",
+        "*://*.amazon.es/*",
+        "*://*.amazon.nl/*",
+        "*://*.amazon.com.au/*",
+        "*://*.amazon.co.jp/*",
+        "*://*.amazon.pl/*",
+        "*://*.amazon.se/*"
       ],
       "js": ["book_page_info.js"],
       "run_at": "document_end"
