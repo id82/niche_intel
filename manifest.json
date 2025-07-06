@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Amazon SERP Deep-Dive (Functional Test)",
+  "name": "NicheIntel Pro by Adigy",
   "version": "1.77",
-  "description": "Performs SERP analysis and deep-dives on the first 10 products for testing.",
+  "description": "Performs Amazon Search Page analysis and deep-dives on the first 10 products for testing.",
   "permissions": [
     "activeTab",
     "scripting",
