@@ -92,7 +92,58 @@ function checkServiceWorkerHealth() {
 console.log("background.js: Performing initial health check");
 checkServiceWorkerHealth();
 
-// Listens for the "start-analysis" command from the popup
+// Handle extension icon clicks directly (no popup)
+chrome.action.onClicked.addListener(async (tab) => {
+    console.log("background.js: Extension icon clicked, starting analysis automatically");
+    
+    try {
+        if (analysisInProgress) {
+            console.warn("background.js: Analysis already in progress.");
+            return;
+        }
+        
+        console.log("background.js: Active tab found:", tab?.url);
+        
+        if (!tab || !tab.url || !tab.url.includes("amazon.")) {
+            console.error("background.js: Not an Amazon page.");
+            return;
+        }
+        
+        // Check if this is a search page (/s) with a keyword (k=)
+        const url = new URL(tab.url);
+        console.log("background.js: Checking URL path:", url.pathname, "and search params:", url.searchParams.has('k'));
+        
+        if (!url.pathname.includes('/s') || !url.searchParams.has('k')) {
+            console.error("background.js: Not an Amazon search page.");
+            return;
+        }
+        
+        // Extract and decode the keyword
+        const keyword = decodeURIComponent(url.searchParams.get('k')).replace(/\+/g, ' ');
+        console.log(`background.js: Detected search keyword: "${keyword}"`);
+        
+        // Store keyword for use in report
+        console.log("background.js: Storing keyword in local storage");
+        await chrome.storage.local.set({ searchKeyword: keyword });
+        
+        analysisInProgress = true;
+        shouldStopAnalysis = false;
+        
+        // Enable resource blocking for faster tab loading
+        await enableResourceBlocking();
+        
+        console.log("background.js: Starting analysis on tab", tab.id);
+        await startAnalysis(tab);
+        
+    } catch (error) {
+        console.error("background.js: An error occurred during the analysis process:", error);
+        analysisInProgress = false;
+        // Disable resource blocking on error
+        await disableResourceBlocking();
+    }
+});
+
+// Listens for the "start-analysis" command from the popup (legacy support)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("background.js: Message received:", request.command);
     
