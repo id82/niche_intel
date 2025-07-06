@@ -320,6 +320,71 @@ th:nth-child(n+6), td:nth-child(n+6) {
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+/* Badge styling similar to type bubbles */
+.badge-bubble {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-right: 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-bestseller {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #92400e;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-new-release {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-amazon-charts {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Sortable column headers */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+th.sortable:hover {
+    background-color: #0f172a;
+}
+
+th.sortable::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid rgba(255, 255, 255, 0.5);
+}
+
+th.sortable.sort-asc::after {
+    border-bottom: 4px solid white;
+    border-top: none;
+}
+
+th.sortable.sort-desc::after {
+    border-top: 4px solid white;
+    border-bottom: none;
+}
+
 /* Modern scrollbar styling */
 ::-webkit-scrollbar {
     width: 8px;

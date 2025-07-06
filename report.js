@@ -106,6 +106,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
+function getTypeTooltip(type) {
+    const tooltips = {
+        'organic': 'Organic search results - natural ranking without paid advertising',
+        'sponsored': 'Sponsored products - paid advertising placements',
+        'sb': 'Sponsored Brands - brand advertising at top of search results',
+        'pv': 'Product Video - video advertising placements',
+        'sp': 'Sponsored Products - individual product advertising',
+        'brand': 'Brand store or brand registry placement',
+        'video': 'Video advertisement placement'
+    };
+    return tooltips[type] || `${type} - placement type`;
+}
+
 function renderInitialTable(serpData, asinsToProcess, container, currentDomain) {
     console.log("report.js: Rendering initial table.");
     const { productInfo, positions } = serpData;
@@ -114,25 +127,25 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         <table>
             <thead>
                 <tr>
-                    <th>Type</th>
-                    <th>ASIN</th>
+                    <th class="sortable" data-column="0" data-type="text">Type</th>
+                    <th class="sortable" data-column="1" data-type="text">ASIN</th>
                     <th>Cover</th>
                     <th>Title & Author</th>
-                    <th>Price</th>
-                    <th>Reviews</th>
-                    <th>Avg Rating</th>
-                    <th>Review Images</th>
-                    <th>Formats</th>
-                    <th>BSR</th>
-                    <th>Days on Market</th>
-                    <th>Length</th>
-                    <th>Large Trim</th>
-                    <th>A+ Modules</th>
-                    <th>UGC Videos</th>
-                    <th>Editorial Reviews</th>
-                    <th>Royalty/Book</th>
-                    <th>Royalty/Month</th>
-                    <th>Publisher</th>
+                    <th class="sortable" data-column="4" data-type="number">Price</th>
+                    <th class="sortable" data-column="5" data-type="number">Reviews</th>
+                    <th class="sortable" data-column="6" data-type="number">Avg Rating</th>
+                    <th class="sortable" data-column="7" data-type="number">Review Images</th>
+                    <th class="sortable" data-column="8" data-type="number">Formats</th>
+                    <th class="sortable" data-column="9" data-type="bsr">BSR</th>
+                    <th class="sortable" data-column="10" data-type="number">Days on Market</th>
+                    <th class="sortable" data-column="11" data-type="number">Length</th>
+                    <th class="sortable" data-column="12" data-type="text">Large Trim</th>
+                    <th class="sortable" data-column="13" data-type="number">A+ Modules</th>
+                    <th class="sortable" data-column="14" data-type="number">UGC Videos</th>
+                    <th class="sortable" data-column="15" data-type="text">Editorial Reviews</th>
+                    <th class="sortable" data-column="16" data-type="number">Royalty/Book</th>
+                    <th class="sortable" data-column="17" data-type="royalty">Royalty/Month</th>
+                    <th class="sortable" data-column="18" data-type="text">Publisher</th>
                 </tr>
             </thead>
             <tbody>
@@ -146,25 +159,32 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         const earliestPosition = placements.length > 0 ? Math.min(...placements.map(p => p.position)) : 'N/A';
         const uniqueTypes = placements.length > 0 ? [...new Set(placements.map(p => p.type))] : [];
         
-        // Format types as bubbles
+        // Format types as bubbles with tooltips
         let typesHTML = '';
         if (uniqueTypes.length > 0) {
             typesHTML = uniqueTypes.map(type => {
                 const className = type === 'organic' ? 'type-organic' : 
                                  type === 'sponsored' ? 'type-sponsored' : 'type-mixed';
-                return `<span class="type-bubble ${className}">${type}</span>`;
+                const tooltip = getTypeTooltip(type);
+                return `<span class="type-bubble ${className}" title="${tooltip}">${type}</span>`;
             }).join('');
         } else {
             typesHTML = 'N/A';
         }
 
-        // Get badge value for display
-        const badgeText = product.badge_status ? 
-            (product.badge_status === 'bestseller' ? 'BS' : 
-             product.badge_status === 'new-release' ? 'NR' : 
-             product.badge_status === 'amazon-charts' ? 'AC' : '') : '';
+        // Get badge value for display with styling
+        let badgeHTML = '';
+        if (product.badge_status) {
+            const badgeClass = `badge-${product.badge_status}`;
+            const badgeText = product.badge_status === 'bestseller' ? 'BS' : 
+                             product.badge_status === 'new-release' ? 'NR' : 
+                             product.badge_status === 'amazon-charts' ? 'AC' : '';
+            if (badgeText) {
+                badgeHTML = `<span class="badge-bubble ${badgeClass}" title="${product.badge_status.replace('-', ' ')}">${badgeText}</span>`;
+            }
+        }
         
-        const titleWithBadge = badgeText ? `(${badgeText}) ${product.title || 'N/A'}` : (product.title || 'N/A');
+        const titleWithBadge = badgeHTML + (product.title || 'N/A');
         
         tableHTML += `
             <tr data-asin="${asin}">
@@ -242,6 +262,101 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
     // Add image hover events after table is rendered
     setTimeout(() => addImageHoverEvents(), 100);
     
+    // Add sorting functionality
+    addSortingFunctionality();
+    
+}
+
+function addSortingFunctionality() {
+    const sortableHeaders = document.querySelectorAll('th.sortable');
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const column = parseInt(header.dataset.column);
+            const type = header.dataset.type;
+            const currentSort = header.classList.contains('sort-asc') ? 'asc' : 
+                               header.classList.contains('sort-desc') ? 'desc' : 'none';
+            
+            // Clear all other sort indicators
+            sortableHeaders.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+            
+            // Determine new sort direction
+            let newSort = 'asc';
+            if (currentSort === 'asc') {
+                newSort = 'desc';
+            }
+            
+            // Special handling for specific columns where "good" values should be first
+            if (type === 'bsr' && currentSort === 'none') {
+                newSort = 'asc'; // Low BSR is good, so ascending first
+            } else if (type === 'royalty' && currentSort === 'none') {
+                newSort = 'desc'; // High royalty is good, so descending first
+            }
+            
+            // Apply sort indicator
+            header.classList.add(`sort-${newSort}`);
+            
+            // Sort the table
+            sortTable(column, type, newSort);
+        });
+    });
+}
+
+function sortTable(columnIndex, dataType, direction) {
+    const table = document.querySelector('table tbody');
+    const rows = Array.from(table.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const aCell = a.children[columnIndex];
+        const bCell = b.children[columnIndex];
+        
+        let aValue = getCellValue(aCell, dataType);
+        let bValue = getCellValue(bCell, dataType);
+        
+        // Handle special cases
+        if (aValue === bValue) return 0;
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+        
+        let comparison = 0;
+        if (dataType === 'number' || dataType === 'bsr' || dataType === 'royalty') {
+            comparison = parseFloat(aValue) - parseFloat(bValue);
+        } else {
+            comparison = aValue.toString().localeCompare(bValue.toString(), undefined, { numeric: true });
+        }
+        
+        return direction === 'asc' ? comparison : -comparison;
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => table.appendChild(row));
+}
+
+function getCellValue(cell, dataType) {
+    if (!cell) return null;
+    
+    const text = cell.textContent.trim();
+    
+    if (text === 'N/A' || text === '...' || text === '') return null;
+    
+    switch (dataType) {
+        case 'number':
+        case 'bsr':
+            // Remove commas and extract first number
+            const numMatch = text.replace(/,/g, '').match(/[\d.]+/);
+            return numMatch ? parseFloat(numMatch[0]) : null;
+            
+        case 'royalty':
+            // Extract number from currency format like $1,234
+            const royaltyMatch = text.replace(/[$,]/g, '').match(/[\d.]+/);
+            return royaltyMatch ? parseFloat(royaltyMatch[0]) : null;
+            
+        case 'text':
+            return text.toLowerCase();
+            
+        default:
+            return text;
+    }
 }
 
 function updateTableRow(asin, data) {
@@ -283,15 +398,18 @@ function updateTableRow(asin, data) {
     
     // Update title with badge if badge status changed
     if (badgeStatus) {
+        const badgeClass = `badge-${badgeStatus}`;
         const badgeAcronym = badgeStatus === 'bestseller' ? 'BS' : 
                             badgeStatus === 'new-release' ? 'NR' : 
                             badgeStatus === 'amazon-charts' ? 'AC' : '';
         const titleElement = document.getElementById(`title-${asin}`);
         if (titleElement && badgeAcronym) {
             const currentTitle = titleElement.textContent;
-            if (!currentTitle.startsWith('(')) {
-                titleElement.textContent = `(${badgeAcronym}) ${currentTitle}`;
-            }
+            // Remove existing badge if present
+            const cleanTitle = currentTitle.replace(/^(\(.*?\)\s*)?/, '');
+            // Add new styled badge
+            const badgeHTML = `<span class="badge-bubble ${badgeClass}" title="${badgeStatus.replace('-', ' ')}">${badgeAcronym}</span>`;
+            titleElement.innerHTML = badgeHTML + cleanTitle;
         }
     }
 
@@ -683,6 +801,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function copyAsinsToClipboard() {
     console.log("report.js: Copying ASINs to clipboard");
     
+    const copyAsinsButton = document.getElementById('copyAsins');
+    
     // Get all ASIN links from the table
     const asinLinks = document.querySelectorAll('.asin-cell a');
     if (asinLinks.length === 0) {
@@ -702,9 +822,28 @@ function copyAsinsToClipboard() {
         setTimeout(() => {
             copyAsinsButton.textContent = originalText;
         }, 2000);
+        console.log("report.js: Successfully copied ASINs to clipboard");
     }).catch(err => {
         console.error('Failed to copy ASINs:', err);
-        alert('Failed to copy ASINs to clipboard');
+        // Try fallback method
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = asinText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const originalText = copyAsinsButton.textContent;
+            copyAsinsButton.textContent = 'Copied!';
+            setTimeout(() => {
+                copyAsinsButton.textContent = originalText;
+            }, 2000);
+            console.log("report.js: Successfully copied ASINs using fallback method");
+        } catch (fallbackErr) {
+            console.error('Fallback copy method also failed:', fallbackErr);
+            alert('Failed to copy ASINs to clipboard');
+        }
     });
 }
 
@@ -718,25 +857,58 @@ function exportToCSV() {
         return;
     }
     
-    const rows = table.querySelectorAll('tr');
     const csvData = [];
     
-    // Process each row
-    rows.forEach((row, index) => {
-        const cells = row.querySelectorAll('th, td');
+    // Get headers
+    const headerRow = table.querySelector('thead tr');
+    if (headerRow) {
+        const headers = Array.from(headerRow.querySelectorAll('th')).map(th => th.textContent.trim());
+        csvData.push(headers.map(h => h.includes(',') ? `"${h}"` : h).join(','));
+    }
+    
+    // Get data rows (excluding totals rows)
+    const dataRows = table.querySelectorAll('tbody tr');
+    dataRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
         const rowData = [];
         
-        cells.forEach(cell => {
-            let cellText = cell.textContent.trim();
-            // Handle links - extract just the text (ASIN)
-            const link = cell.querySelector('a');
-            if (link) {
-                cellText = link.textContent.trim();
+        cells.forEach((cell, index) => {
+            let cellText = '';
+            
+            // Handle type bubbles (first column)
+            if (index === 0 && cell.querySelector('.type-bubble')) {
+                const bubbles = cell.querySelectorAll('.type-bubble');
+                cellText = Array.from(bubbles).map(bubble => bubble.textContent.trim()).join(', ');
             }
-            // Escape quotes and wrap in quotes if contains comma
-            if (cellText.includes(',') || cellText.includes('"')) {
+            // Handle ASIN links
+            else if (cell.querySelector('a')) {
+                cellText = cell.querySelector('a').textContent.trim();
+            }
+            // Handle images (show URL or 'image')
+            else if (cell.querySelector('img')) {
+                const img = cell.querySelector('img');
+                cellText = img.src || 'image';
+            }
+            // Handle title and author (extract both parts)
+            else if (cell.querySelector('.title')) {
+                const title = cell.querySelector('.title').textContent.trim();
+                const author = cell.querySelector('.author');
+                cellText = author ? `${title} by ${author.textContent.trim()}` : title;
+            }
+            // Handle price with discount (flatten to single line)
+            else if (cell.innerHTML.includes('<br>')) {
+                cellText = cell.textContent.replace(/\s+/g, ' ').trim();
+            }
+            // Default case
+            else {
+                cellText = cell.textContent.trim();
+            }
+            
+            // Escape quotes and wrap in quotes if contains comma or quote
+            if (cellText.includes(',') || cellText.includes('"') || cellText.includes('\n')) {
                 cellText = '"' + cellText.replace(/"/g, '""') + '"';
             }
+            
             rowData.push(cellText);
         });
         
@@ -747,11 +919,11 @@ function exportToCSV() {
     const csvContent = csvData.join('\n');
     
     // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `amazon_serp_analysis_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `nicheIntel_analysis_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
