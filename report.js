@@ -108,13 +108,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function getTypeTooltip(type) {
     const tooltips = {
-        'organic': 'Organic search results - natural ranking without paid advertising',
-        'sponsored': 'Sponsored products - paid advertising placements',
-        'sb': 'Sponsored Brands - brand advertising at top of search results',
-        'pv': 'Product Video - video advertising placements',
-        'sp': 'Sponsored Products - individual product advertising',
-        'brand': 'Brand store or brand registry placement',
-        'video': 'Video advertisement placement'
+        'O': 'Organic - natural ranking without paid advertising',
+        'SP': 'Sponsored Products - individual product advertising',
+        'SB': 'Sponsored Brands - brand advertising at top of search results',
+        'PV': 'Product Video - video advertising placements for 1 ASIN',
+        'BV': 'Brand Video - video advertising placements for multiple ASINs',
+        'OC': 'Organic Carousel - multiple ASINs in strip',
+        'SC': 'Sponsored Carousel - multiple ASINs in sponsored strip',
     };
     return tooltips[type] || `${type} - placement type`;
 }
