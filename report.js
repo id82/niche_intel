@@ -1007,12 +1007,14 @@ function exportToCSV() {
     
     const csvData = [];
     
-    // Get headers
-    const headerRow = table.querySelector('thead tr');
-    if (headerRow) {
-        const headers = Array.from(headerRow.querySelectorAll('th')).map(th => th.textContent.trim());
-        csvData.push(headers.map(h => h.includes(',') ? `"${h}"` : h).join(','));
-    }
+    // Define custom headers (skip Select and Type columns, split Price into two columns)
+    const customHeaders = [
+        'ASIN', 'Cover', 'Title & Author', 'List Price', 'Discount Price', 'Reviews', 
+        'Avg Rating', 'Review Images', 'Formats', 'BSR', 'Days on Market', 'Length', 
+        'Large Trim', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'Royalty/Book', 
+        'Royalty/Month', 'Publisher'
+    ];
+    csvData.push(customHeaders.join(','));
     
     // Get data rows (excluding totals rows)
     const dataRows = table.querySelectorAll('tbody tr');
@@ -1021,33 +1023,67 @@ function exportToCSV() {
         const rowData = [];
         
         cells.forEach((cell, index) => {
+            // Skip Select column (index 0) and Type column (index 1)
+            if (index === 0 || index === 1) {
+                return;
+            }
+            
             let cellText = '';
             
-            // Handle type bubbles (first column)
-            if (index === 0 && cell.querySelector('.type-bubble')) {
-                const bubbles = cell.querySelectorAll('.type-bubble');
-                cellText = Array.from(bubbles).map(bubble => bubble.textContent.trim()).join(', ');
-            }
-            // Handle ASIN links
-            else if (cell.querySelector('a')) {
+            // Handle ASIN links (index 2)
+            if (index === 2 && cell.querySelector('a')) {
                 cellText = cell.querySelector('a').textContent.trim();
             }
-            // Handle images (show URL or 'image')
-            else if (cell.querySelector('img')) {
+            // Handle images (index 3) - show URL
+            else if (index === 3 && cell.querySelector('img')) {
                 const img = cell.querySelector('img');
-                cellText = img.src || 'image';
+                cellText = img.src || '';
             }
-            // Handle title and author (extract both parts)
-            else if (cell.querySelector('.title')) {
+            // Handle title and author (index 4)
+            else if (index === 4 && cell.querySelector('.title')) {
                 const title = cell.querySelector('.title').textContent.trim();
                 const author = cell.querySelector('.author');
                 cellText = author ? `${title} by ${author.textContent.trim()}` : title;
             }
-            // Handle price with discount (flatten to single line)
-            else if (cell.innerHTML.includes('<br>')) {
-                cellText = cell.textContent.replace(/\s+/g, ' ').trim();
+            // Handle price column (index 5) - split into two columns
+            else if (index === 5) {
+                const cellHTML = cell.innerHTML;
+                let listPrice = '';
+                let discountPrice = '';
+                
+                if (cellHTML.includes('<br>')) {
+                    // Has discount: $31.00<br><span class="discount-price">$25.12(-19%)</span>
+                    const parts = cellHTML.split('<br>');
+                    if (parts.length >= 2) {
+                        // Extract list price (remove $ symbol)
+                        listPrice = parts[0].replace(/\$/, '').trim();
+                        
+                        // Extract discount price from the span (remove $ and percentage)
+                        const discountSpan = parts[1];
+                        const match = discountSpan.match(/\$(\d+\.?\d*)/);
+                        if (match) {
+                            discountPrice = match[1];
+                        }
+                    }
+                } else {
+                    // No discount: just $31.00
+                    const priceText = cell.textContent.trim();
+                    if (priceText !== 'N/A') {
+                        listPrice = priceText.replace(/\$/, '');
+                    }
+                }
+                
+                // Add both price columns
+                rowData.push(listPrice);
+                rowData.push(discountPrice);
+                return; // Don't process this column further
             }
-            // Default case
+            // Handle royalty columns (remove $ symbols)
+            else if (index === 17 || index === 18) {
+                cellText = cell.textContent.trim().replace(/\$/, '').replace(/,/g, '');
+                if (cellText === 'N/A') cellText = '';
+            }
+            // Default case for other columns
             else {
                 cellText = cell.textContent.trim();
             }
