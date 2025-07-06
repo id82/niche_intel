@@ -18,6 +18,7 @@ chrome.runtime.onInstalled.addListener(() => {
 // Resource blocking functionality - simplified approach from testing.md
 const RESOURCE_BLOCKING_RULE_ID = 1;
 const SCRIPT_BLOCKING_RULE_ID = 2;
+const AMAZON_SCRIPT_BLOCKING_RULE_ID = 3;
 
 async function enableResourceBlocking() {
     try {
@@ -36,7 +37,7 @@ async function enableResourceBlocking() {
                     "amazon.it", "amazon.es", "amazon.nl", "amazon.com.au", 
                     "amazon.co.jp", "amazon.pl", "amazon.se", "amazon.ca"
                 ],
-                "resourceTypes": ["image", "font"]
+                "resourceTypes": ["image", "font", "media", "stylesheet"]
             }
         };
 
@@ -54,9 +55,19 @@ async function enableResourceBlocking() {
             }
         };
 
+        const AMAZON_SCRIPT_BLOCKING_RULE = {
+            id: AMAZON_SCRIPT_BLOCKING_RULE_ID,
+            priority: 1,
+            action: { type: "block" },
+            condition: {
+                "urlFilter": "*recommendation*|*customer-reviews-critical*|*social-share*|*advertising*|*analytics*|*tracking*",
+                "resourceTypes": ["script"]
+            }
+        };
+
         await chrome.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [RESOURCE_BLOCKING_RULE_ID, SCRIPT_BLOCKING_RULE_ID], // Clear old rules first
-            addRules: [RESOURCE_BLOCKING_RULE, SCRIPT_BLOCKING_RULE]
+            removeRuleIds: [RESOURCE_BLOCKING_RULE_ID, SCRIPT_BLOCKING_RULE_ID, AMAZON_SCRIPT_BLOCKING_RULE_ID], // Clear old rules first
+            addRules: [RESOURCE_BLOCKING_RULE, SCRIPT_BLOCKING_RULE, AMAZON_SCRIPT_BLOCKING_RULE]
         });
         
         console.log("background.js: Resource and script blocking rules enabled successfully.");
@@ -73,7 +84,7 @@ async function disableResourceBlocking() {
         }
         
         await chrome.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [RESOURCE_BLOCKING_RULE_ID, SCRIPT_BLOCKING_RULE_ID]
+            removeRuleIds: [RESOURCE_BLOCKING_RULE_ID, SCRIPT_BLOCKING_RULE_ID, AMAZON_SCRIPT_BLOCKING_RULE_ID]
         });
         
         console.log("background.js: Resource blocking disabled successfully.");
