@@ -15,12 +15,97 @@ chrome.runtime.onInstalled.addListener(() => {
     console.log("background.js: Extension installed/updated");
 });
 
-// Temporarily remove resource blocking functionality to fix service worker startup
-console.log("background.js: Resource blocking disabled for debugging");
+// Resource blocking functionality - simplified approach from testing.md
+const RESOURCE_BLOCKING_RULE_ID = 1;
+const SCRIPT_BLOCKING_RULE_ID = 2;
+
+async function enableResourceBlocking() {
+    try {
+        if (!chrome.declarativeNetRequest) {
+            console.warn("background.js: declarativeNetRequest API not available.");
+            return;
+        }
+        
+        const RESOURCE_BLOCKING_RULE = {
+            id: RESOURCE_BLOCKING_RULE_ID,
+            priority: 1,
+            action: { type: "block" },
+            condition: {
+                "initiatorDomains": [
+                    "amazon.com", "amazon.co.uk", "amazon.de", "amazon.fr",
+                    "amazon.it", "amazon.es", "amazon.nl", "amazon.com.au", 
+                    "amazon.co.jp", "amazon.pl", "amazon.se", "amazon.ca"
+                ],
+                "resourceTypes": ["image", "media", "font", "stylesheet"]
+            }
+        };
+
+        const SCRIPT_BLOCKING_RULE = {
+            id: SCRIPT_BLOCKING_RULE_ID,
+            priority: 1,
+            action: { type: "block" },
+            condition: {
+                "requestDomains": [
+                    "doubleclick.net", "google-analytics.com", "googletagmanager.com",
+                    "scorecardresearch.com", "amazon-adsystem.com", "mads.amazon-adsystem.com",
+                    "advertising.amazon.com", "aan.amazon.com"
+                ],
+                "resourceTypes": ["script", "sub_frame"]
+            }
+        };
+
+        await chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [RESOURCE_BLOCKING_RULE_ID, SCRIPT_BLOCKING_RULE_ID], // Clear old rules first
+            addRules: [RESOURCE_BLOCKING_RULE, SCRIPT_BLOCKING_RULE]
+        });
+        
+        console.log("background.js: Resource and script blocking rules enabled successfully.");
+    } catch (error) {
+        console.error("background.js: Failed to enable resource blocking:", error);
+    }
+}
+
+async function disableResourceBlocking() {
+    try {
+        if (!chrome.declarativeNetRequest) {
+            console.warn("background.js: declarativeNetRequest API not available.");
+            return;
+        }
+        
+        await chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [RESOURCE_BLOCKING_RULE_ID, SCRIPT_BLOCKING_RULE_ID]
+        });
+        
+        console.log("background.js: Resource blocking disabled successfully.");
+    } catch (error) {
+        console.error("background.js: Failed to disable resource blocking:", error);
+    }
+}
+
+// Service worker health check function
+function checkServiceWorkerHealth() {
+    console.log("background.js: Service worker health check - Active and responding");
+    return true;
+}
+
+// Initialize with health check
+console.log("background.js: Performing initial health check");
+checkServiceWorkerHealth();
 
 // Listens for the "start-analysis" command from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("background.js: Message received:", request.command);
+    
+    // Health check command for testing service worker responsiveness
+    if (request.command === "health-check") {
+        console.log("background.js: Health check requested");
+        sendResponse({ 
+            success: true, 
+            message: "Service worker active and responding",
+            timestamp: Date.now()
+        });
+        return true;
+    }
     
     if (request.command === "start-analysis") {
         console.log("background.js: Processing start-analysis command");
@@ -68,9 +153,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 analysisInProgress = true;
                 shouldStopAnalysis = false;
                 
-                // Resource blocking disabled for debugging
-                console.log("background.js: Skipping resource blocking (disabled for debugging)");
-                
                 console.log("background.js: Starting analysis on tab", activeTab.id);
                 await startAnalysis(activeTab); 
                 
@@ -79,10 +161,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             } catch (error) {
                 console.error("background.js: An error occurred during the analysis process:", error);
                 analysisInProgress = false;
-                
-                // Resource blocking disabled for debugging
-                console.log("background.js: Skipping resource blocking cleanup (disabled for debugging)");
-                
                 sendResponse({ success: false, message: error.message || "Unknown error occurred" });
             }
         })();
@@ -92,21 +170,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         shouldStopAnalysis = true;
         analysisInProgress = false;
         
-        // Resource blocking disabled for debugging
-        console.log("background.js: Skipping resource blocking cleanup on stop (disabled for debugging)");
-        
-        // Close all monitored tabs
-        const tabsToClose = Array.from(monitoredTabs);
-        tabsToClose.forEach(async (tabId) => {
-            try {
-                await chrome.tabs.remove(tabId);
-                monitoredTabs.delete(tabId);
-            } catch (error) {
-                console.warn(`background.js: Failed to close tab ${tabId}:`, error);
-            }
-        });
-        
-        sendResponse({ success: true, message: "Analysis stopped. Background tabs closed." });
+        // Clean up resource blocking on stop - async approach from testing.md
+        (async () => {
+            await disableResourceBlocking();
+            
+            const tabsToClose = Array.from(monitoredTabs);
+            tabsToClose.forEach(async (tabId) => {
+                try {
+                    await chrome.tabs.remove(tabId);
+                    monitoredTabs.delete(tabId);
+                } catch (error) {
+                    console.warn(`background.js: Failed to close tab ${tabId}:`, error);
+                }
+            });
+            
+            sendResponse({ success: true, message: "Analysis stopped. Background tabs closed." });
+        })();
         return true;
     }
     return true; // Also good to have for other potential messages
@@ -194,8 +273,8 @@ async function startAnalysis(activeTab) {
         monitoredTabs.clear();
         analysisInProgress = false;
         
-        // Resource blocking disabled for debugging
-        console.log("background.js: Skipping resource blocking cleanup on error (disabled for debugging)");
+        // Clean up resource blocking on error
+        await disableResourceBlocking();
         
         throw e;
     }
@@ -338,6 +417,10 @@ async function processSingleAsin(asin, domain, maxRetries = 2) {
 async function processAsinQueue(asins, reportTabId, domain) {
     console.log("background.js: Starting to process ASIN queue:", asins);
 
+    // Enable resource blocking just before processing background tabs
+    console.log("background.js: Enabling resource blocking for background tab processing");
+    await enableResourceBlocking();
+
     const BATCH_SIZE = 5; // Process 5 ASINs concurrently
     const batches = [];
     
@@ -416,8 +499,8 @@ async function processAsinQueue(asins, reportTabId, domain) {
     // 6. Send completion message after the loop finishes
     analysisInProgress = false;
     
-    // Resource blocking disabled for debugging
-    console.log("background.js: Skipping resource blocking cleanup on completion (disabled for debugging)");
+    // Clean up resource blocking on completion
+    await disableResourceBlocking();
     
     const completionMessage = shouldStopAnalysis ? "Analysis stopped by user." : "All ASINs processed.";
     console.log(`background.js: ${completionMessage}`);
