@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Amazon SERP Deep-Dive (Functional Test)",
-  "version": "1.76",
+  "version": "1.77",
   "description": "Performs SERP analysis and deep-dives on the first 10 products for testing.",
   "permissions": [
     "activeTab",
@@ -51,7 +51,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["report.html", "report.js", "report.css", "icons/icon32.png"],
+      "resources": ["report.html", "report.js", "report.css", "icons/icon16.png", "icons/icon32.png"],
       "matches": ["<all_urls>"]
     }
   ]
