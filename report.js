@@ -1,3 +1,9 @@
+// Global variables for data management
+let allData = []; // To store data for all processed ASINs
+let uniqueAsins = new Set(); // To track unique ASINs and avoid double counting
+let processedCount = 0;
+let totalToProcess = 0;
+
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("report.js: DOM fully loaded and parsed.");
     const tableContainer = document.getElementById('table-container');
@@ -28,10 +34,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.title = `NicheIntel Pro - ${searchKeyword}`;
     }
     
-    let processedCount = 0;
-    const totalToProcess = asinsToProcess.length;
-    let allData = []; // To store data for all processed ASINs
-    let uniqueAsins = new Set(); // To track unique ASINs and avoid double counting
+    // Initialize global variables
+    processedCount = 0;
+    totalToProcess = asinsToProcess.length;
+    allData = []; // Reset global array
+    uniqueAsins = new Set(); // Reset global set
 
     progressText.textContent = `Progress: ${processedCount} / ${totalToProcess} products analyzed.`;
 
@@ -462,6 +469,13 @@ function clearTotalsRows() {
 }
 
 function updateTotalsCalculations() {
+    // Safety check: ensure allData exists and is an array
+    if (!allData || !Array.isArray(allData)) {
+        console.warn("report.js: allData is not available yet, clearing totals");
+        clearTotalsRows();
+        return;
+    }
+    
     const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
     const selectedAsins = Array.from(checkedBoxes).map(cb => cb.dataset.asin);
     
