@@ -218,7 +218,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
             </tbody>
             <tfoot>
                 <tr id="totals-row" style="font-weight: bold;">
-                    <td colspan="5">Totals / Averages</td>
+                    <td colspan="4">Totals / Averages</td>
                     <td id="avg-price">$0.00</td>
                     <td id="total-reviews">0</td>
                     <td id="avg-rating">0.00</td>
@@ -236,7 +236,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td></td> <!-- Publisher -->
                 </tr>
                 <tr id="high-royalty-totals-row" style="font-weight: bold; background-color: #e8f5e8;">
-                    <td colspan="5">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span></td>
+                    <td colspan="4">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span></td>
                     <td id="high-avg-price">$0.00</td>
                     <td id="high-total-reviews">0</td>
                     <td id="high-avg-rating">0.00</td>
