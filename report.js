@@ -747,7 +747,7 @@ function calculateAndDisplayTotals(allData) {
     document.getElementById('avg-aplus').textContent = (totals.aplusCount > 0 ? (totals.aplusSum / totals.aplusCount).toFixed(1) : '0.0');
     document.getElementById('avg-ugc-videos').textContent = (totals.ugcCount > 0 ? (totals.ugcVideos / totals.ugcCount).toFixed(1) : '0.0');
     document.getElementById('avg-royalty-unit').textContent = (totals.royaltyUnitCount > 0 ? `$${(totals.royaltyUnitSum / totals.royaltyUnitCount).toFixed(2)}` : '$0.00');
-    document.getElementById('total-royalty-month').textContent = (totals.royaltyMonthCount > 0 ? `$${Math.round(totals.royaltyMonthSum).toLocaleString()}` : '$0'); // <-- FIXED: Calculate SUM, not average
+    document.getElementById('total-royalty-month').textContent = (totals.royaltyMonthCount > 0 ? `$${Math.round(totals.royaltyMonthSum / totals.royaltyMonthCount).toLocaleString()}` : '$0');
 
     // New calculations
     const avgFormats = totals.formatCount > 0 ? (totals.formatSum / totals.formatCount).toFixed(1) : '0.0';
@@ -912,7 +912,7 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     document.getElementById('high-avg-aplus').textContent = (highTotals.aplusCount > 0 ? (highTotals.aplusSum / highTotals.aplusCount).toFixed(1) : '0.0');
     document.getElementById('high-avg-ugc-videos').textContent = (highTotals.ugcCount > 0 ? (highTotals.ugcVideos / highTotals.ugcCount).toFixed(1) : '0.0');
     document.getElementById('high-avg-royalty-unit').textContent = (highTotals.royaltyUnitCount > 0 ? `$${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : '$0.00');
-    document.getElementById('high-total-royalty-month').textContent = (highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum).toLocaleString()}` : '$0'); // <-- FIXED: Calculate SUM, not average
+    document.getElementById('high-total-royalty-month').textContent = (highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum / highTotals.royaltyMonthCount).toLocaleString()}` : '$0');
     
     // New calculations for high royalty books
     const highAvgFormats = highTotals.formatCount > 0 ? (highTotals.formatSum / highTotals.formatCount).toFixed(1) : '0.0';
