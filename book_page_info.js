@@ -103,54 +103,58 @@ function extractBookData() {
     return data;
 }
 
-// Calculate monthly sales and royalty using the same logic as the main extension
+// Calculate monthly sales and royalty using the EXACT same logic as scrapers.js
 function calculateMonthlyMetrics(bookData) {
     if (!bookData.bsr || !bookData.price || !bookData.pageCount) {
         return { monthlySales: null, monthlyRoyalty: null, dailySales: null, royaltyPerUnit: null };
     }
     
-    // Use the same BSR to sales estimation logic from scrapers.js
-    function estimateSales(bsr, bookType, marketCode) {
-        const salesData = {
-            'US': {
-                'paperback': [
-                    [1, 8000], [5, 4000], [10, 2500], [25, 1500], [50, 800], [100, 400],
-                    [250, 200], [500, 100], [1000, 50], [2500, 20], [5000, 10],
-                    [10000, 5], [25000, 2], [50000, 1], [100000, 0.5], [250000, 0.2],
-                    [500000, 0.1], [1000000, 0.05]
-                ],
-                'kindle': [
-                    [1, 12000], [5, 6000], [10, 3500], [25, 2000], [50, 1200], [100, 600],
-                    [250, 300], [500, 150], [1000, 75], [2500, 30], [5000, 15],
-                    [10000, 8], [25000, 3], [50000, 1.5], [100000, 0.7], [250000, 0.3],
-                    [500000, 0.15], [1000000, 0.08]
-                ]
-            }
-        };
-        
-        const typeMap = {
-            'paperback': 'paperback',
-            'hardcover': 'paperback',
-            'kindle': 'kindle'
-        };
-        
-        const mappedType = typeMap[bookType] || 'paperback';
-        const countryData = salesData[marketCode] || salesData['US'];
-        const typeData = countryData[mappedType] || countryData['paperback'];
-        
-        for (let i = 0; i < typeData.length; i++) {
-            if (bsr <= typeData[i][0]) {
-                return typeData[i][1];
-            }
+    // Use the EXACT same BSR to sales estimation logic from scrapers.js
+    const multipliers = {
+        ebook: { USD: 1, GBP: 0.31, DE: 0.36, FR: 0.11, ES: 0.093, IT: 0.10, NL: 0.023, YEN: 0.22, IN: 0.021, CAD: 0.17, MEX: 0.044, AUD: 0.022, SE: 1, PL: 1 },
+        paperback: { USD: 1, GBP: 0.16, DE: 0.19, FR: 0.055, ES: 0.048, IT: 0.053, NL: 0.012, YEN: 0.12, IN: 0.011, CAD: 0.089, MEX: 0.023, AUD: 0.011, SE: 1, PL: 1 },
+        hardcover: {},
+    };
+    Object.assign(multipliers.hardcover, multipliers.paperback);
+    
+    const A = 3.35038, B = -0.29193, C = -0.070538;
+    
+    function coreUnits(bsr) {
+        if (bsr <= 100000) {
+            const t = Math.log10(bsr);
+            return 10 ** (A + B * t + C * t * t);
         }
-        
-        return typeData[typeData.length - 1][1];
+        return 100000 / (100000 + (bsr - 100000) * 8);
     }
     
-    // Determine book type and market
-    const bookType = window.location.href.includes('digital-text') ? 'kindle' : 'paperback';
+    function getMultiplier(type, market) { 
+        return multipliers[type]?.[market] ?? 1; 
+    }
+    
+    function estimateSales(bsr, bookType, market) {
+        if (!Number.isFinite(bsr) || bsr < 1) return 0;
+        return Math.max(0, 1.37 * coreUnits(bsr) * getMultiplier(bookType, market));
+    }
+    
+    // Determine book type and market using same logic as scrapers.js
+    const bookType = window.location.href.includes('digital-text') ? 'ebook' : 'paperback';
     const marketplace = window.location.hostname;
-    const marketCode = marketplace.includes('.com') ? 'US' : 'US'; // Simplified
+    
+    // Map marketplace to market code (same as scrapers.js)
+    const tldMap = {
+        'amazon.com': 'USD', 'amazon.ca': 'CAD', 'amazon.co.uk': 'GBP',
+        'amazon.de': 'DE', 'amazon.fr': 'FR', 'amazon.it': 'IT',
+        'amazon.es': 'ES', 'amazon.nl': 'NL', 'amazon.com.au': 'AUD',
+        'amazon.co.jp': 'YEN', 'amazon.pl': 'PL', 'amazon.se': 'SE'
+    };
+    
+    let marketCode = 'USD'; // Default
+    for (const key in tldMap) {
+        if (marketplace.includes(key)) {
+            marketCode = tldMap[key];
+            break;
+        }
+    }
     
     // Calculate daily sales
     const dailySales = estimateSales(bookData.bsr, bookType, marketCode);
@@ -236,46 +240,58 @@ function createInfoTable(bookData, metrics) {
         font-size: 14px;
     `;
     
-    // Create table data
-    const tableData = [
-        ['Title', bookData.title || 'N/A'],
-        ['ASIN', bookData.asin || 'N/A'],
-        ['Price', bookData.price ? `$${bookData.price.toFixed(2)}` : 'N/A'],
-        ['BSR', bookData.bsr ? bookData.bsr.toLocaleString() : 'N/A'],
-        ['Pages', bookData.pageCount ? bookData.pageCount.toLocaleString() : 'N/A'],
-        ['Daily Sales', metrics.dailySales ? metrics.dailySales.toFixed(1) : 'N/A'],
-        ['Monthly Sales', metrics.monthlySales ? metrics.monthlySales.toLocaleString() : 'N/A'],
-        ['Royalty/Unit', metrics.royaltyPerUnit ? `$${metrics.royaltyPerUnit.toFixed(2)}` : 'N/A'],
-        ['Monthly Royalty', metrics.monthlyRoyalty ? `$${metrics.monthlyRoyalty.toLocaleString()}` : 'N/A']
+    // Create transposed table data (remove title, transpose to horizontal layout)
+    const labels = ['ASIN', 'Price', 'BSR', 'Pages', 'Daily Sales', 'Monthly Sales', 'Royalty/Unit', 'Monthly Royalty'];
+    const values = [
+        bookData.asin || 'N/A',
+        bookData.price ? `$${bookData.price.toFixed(2)}` : 'N/A',
+        bookData.bsr ? bookData.bsr.toLocaleString() : 'N/A',
+        bookData.pageCount ? bookData.pageCount.toLocaleString() : 'N/A',
+        metrics.dailySales ? metrics.dailySales.toFixed(1) : 'N/A',
+        metrics.monthlySales ? metrics.monthlySales.toLocaleString() : 'N/A',
+        metrics.royaltyPerUnit ? `$${metrics.royaltyPerUnit.toFixed(2)}` : 'N/A',
+        metrics.monthlyRoyalty ? `$${metrics.monthlyRoyalty.toLocaleString()}` : 'N/A'
     ];
     
-    // Create table rows
-    tableData.forEach((row, index) => {
-        const tr = document.createElement('tr');
-        tr.style.cssText = index % 2 === 0 ? 'background-color: #f8fafc;' : 'background-color: white;';
-        
-        const labelTd = document.createElement('td');
-        labelTd.textContent = row[0];
-        labelTd.style.cssText = `
-            padding: 8px 12px;
+    // Create header row
+    const headerRow = document.createElement('tr');
+    headerRow.style.cssText = 'background-color: #1e293b;';
+    
+    labels.forEach(label => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        th.style.cssText = `
+            padding: 10px 8px;
+            color: white;
             font-weight: 600;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
-            width: 40%;
+            text-align: center;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-right: 1px solid rgba(255,255,255,0.2);
         `;
-        
-        const valueTd = document.createElement('td');
-        valueTd.textContent = row[1];
-        valueTd.style.cssText = `
-            padding: 8px 12px;
-            color: #6b7280;
-            border-bottom: 1px solid #e5e7eb;
-        `;
-        
-        tr.appendChild(labelTd);
-        tr.appendChild(valueTd);
-        table.appendChild(tr);
+        headerRow.appendChild(th);
     });
+    table.appendChild(headerRow);
+    
+    // Create data row
+    const dataRow = document.createElement('tr');
+    dataRow.style.cssText = 'background-color: white;';
+    
+    values.forEach((value, index) => {
+        const td = document.createElement('td');
+        td.textContent = value;
+        td.style.cssText = `
+            padding: 12px 8px;
+            color: #374151;
+            text-align: center;
+            font-weight: 500;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+        `;
+        dataRow.appendChild(td);
+    });
+    table.appendChild(dataRow);
     
     container.appendChild(table);
     return container;
