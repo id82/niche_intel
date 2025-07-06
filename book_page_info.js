@@ -395,17 +395,23 @@ function insertInfoTable() {
         '#dp-container',
         '#centerCol',
         '#dpx-center-col-wrapper',
-        '#dp'
+        '#dp',
+        '#main-content',
+        '#ppd',
+        'body'  // Fallback to body
     ];
     
     let targetElement = null;
     for (const selector of insertionPoints) {
         targetElement = document.querySelector(selector);
-        if (targetElement) break;
+        if (targetElement) {
+            console.log(`NicheIntel Pro: Found insertion point: ${selector}`);
+            break;
+        }
     }
     
     if (!targetElement) {
-        console.log("NicheIntel Pro: Could not find suitable insertion point");
+        console.log("NicheIntel Pro: Could not find suitable insertion point, skipping table insertion");
         return;
     }
     
@@ -422,6 +428,12 @@ function insertInfoTable() {
 
 // Main initialization function
 function initBookPageInfo() {
+    // Don't run on search pages - those are handled by the main analysis
+    if (window.location.pathname.includes('/s')) {
+        console.log("NicheIntel Pro: On search page, skipping book page info");
+        return;
+    }
+    
     if (!isValidBookPage()) {
         console.log("NicheIntel Pro: Not a valid book page, skipping");
         return;
