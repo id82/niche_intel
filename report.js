@@ -3,6 +3,7 @@ let allData = []; // To store data for all processed ASINs
 let uniqueAsins = new Set(); // To track unique ASINs and avoid double counting
 let processedCount = 0;
 let totalToProcess = 0;
+let searchKeyword = ''; // Global search keyword for filename generation
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("report.js: DOM fully loaded and parsed.");
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     createImageHoverModal();
 
     console.log("report.js: Loading initial data from local storage.");
-    const { serpData, asinsToProcess, currentDomain, searchKeyword } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']);
+    const { serpData, asinsToProcess, currentDomain, searchKeyword: loadedKeyword } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']);
 
     if (!serpData || !asinsToProcess) {
         console.error("report.js: Could not load initial data from storage.");
@@ -24,7 +25,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log("report.js: Initial data loaded successfully.", { serpData, asinsToProcess });
     
-    // Update header with search keyword if available
+    // Store search keyword globally and update header if available
+    searchKeyword = loadedKeyword || '';
     if (searchKeyword) {
         const headerTitle = document.querySelector('.header h1');
         if (headerTitle) {
@@ -1069,7 +1071,10 @@ function exportToCSV() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `nicheIntel_analysis_${new Date().toISOString().slice(0, 10)}.csv`;
+    // Create filename with search keyword and date
+    const sanitizedKeyword = searchKeyword ? searchKeyword.replace(/[^a-zA-Z0-9_-]/g, '_') : 'analysis';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.download = `${sanitizedKeyword}_${dateStr}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
