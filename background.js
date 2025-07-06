@@ -153,6 +153,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 analysisInProgress = true;
                 shouldStopAnalysis = false;
                 
+                // Enable resource blocking for faster tab loading
+                await enableResourceBlocking();
+                
                 console.log("background.js: Starting analysis on tab", activeTab.id);
                 await startAnalysis(activeTab); 
                 
@@ -161,6 +164,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             } catch (error) {
                 console.error("background.js: An error occurred during the analysis process:", error);
                 analysisInProgress = false;
+                // Disable resource blocking on error
+                await disableResourceBlocking();
                 sendResponse({ success: false, message: error.message || "Unknown error occurred" });
             }
         })();
@@ -170,9 +175,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         shouldStopAnalysis = true;
         analysisInProgress = false;
         
-        // Clean up resource blocking on stop - disabled for debugging
+        // Clean up resource blocking on stop
         (async () => {
-            console.log("background.js: Resource blocking cleanup skipped on stop (blocking was disabled)");
+            await disableResourceBlocking();
             
             const tabsToClose = Array.from(monitoredTabs);
             tabsToClose.forEach(async (tabId) => {
@@ -417,9 +422,6 @@ async function processSingleAsin(asin, domain, maxRetries = 2) {
 async function processAsinQueue(asins, reportTabId, domain) {
     console.log("background.js: Starting to process ASIN queue:", asins);
 
-    // Temporarily disable resource blocking to debug data extraction issue
-    console.log("background.js: Resource blocking temporarily disabled for debugging");
-
     const BATCH_SIZE = 5; // Process 5 ASINs concurrently
     const batches = [];
     
@@ -503,8 +505,8 @@ async function processAsinQueue(asins, reportTabId, domain) {
     // 6. Send completion message after the loop finishes
     analysisInProgress = false;
     
-    // Resource blocking cleanup disabled (since blocking was disabled)
-    console.log("background.js: Resource blocking cleanup skipped (blocking was disabled)");
+    // Disable resource blocking after analysis completion
+    await disableResourceBlocking();
     
     const completionMessage = shouldStopAnalysis ? "Analysis stopped by user." : "All ASINs processed.";
     console.log(`background.js: ${completionMessage}`);
