@@ -15,55 +15,8 @@ chrome.runtime.onInstalled.addListener(() => {
     console.log("background.js: Extension installed/updated");
 });
 
-// Resource blocking for faster page loads
-const BLOCKING_RULE_ID = 1;
-let blockingEnabled = false;
-
-// Enable resource blocking for faster scraping
-async function enableResourceBlocking() {
-    if (blockingEnabled) return;
-    
-    console.log("background.js: Enabling resource blocking for faster scraping");
-    try {
-        const blockingRules = [{
-            id: BLOCKING_RULE_ID,
-            priority: 1,
-            action: { type: "block" },
-            condition: {
-                resourceTypes: ["image", "media"],
-                urlFilter: "*://*.amazon.*/*",
-                excludeInitiatorDomains: ["chrome-extension"]
-            }
-        }];
-        
-        await chrome.declarativeNetRequest.updateDynamicRules({
-            addRules: blockingRules
-        });
-        
-        blockingEnabled = true;
-        console.log("background.js: Resource blocking enabled successfully");
-    } catch (error) {
-        console.error("background.js: Failed to enable resource blocking:", error);
-        // Continue without blocking rather than failing completely
-    }
-}
-
-// Disable resource blocking to restore normal browsing
-async function disableResourceBlocking() {
-    if (!blockingEnabled) return;
-    
-    console.log("background.js: Disabling resource blocking");
-    try {
-        await chrome.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [BLOCKING_RULE_ID]
-        });
-        
-        blockingEnabled = false;
-        console.log("background.js: Resource blocking disabled successfully");
-    } catch (error) {
-        console.warn("background.js: Failed to disable resource blocking:", error);
-    }
-}
+// Temporarily remove resource blocking functionality to fix service worker startup
+console.log("background.js: Resource blocking disabled for debugging");
 
 // Listens for the "start-analysis" command from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -115,11 +68,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 analysisInProgress = true;
                 shouldStopAnalysis = false;
                 
-                // Enable resource blocking for faster page loads
-                console.log("background.js: About to enable resource blocking");
-                // Temporarily disable resource blocking for debugging
-                // await enableResourceBlocking();
-                console.log("background.js: Resource blocking setup complete (DISABLED FOR DEBUGGING)");
+                // Resource blocking disabled for debugging
+                console.log("background.js: Skipping resource blocking (disabled for debugging)");
                 
                 console.log("background.js: Starting analysis on tab", activeTab.id);
                 await startAnalysis(activeTab); 
@@ -130,12 +80,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.error("background.js: An error occurred during the analysis process:", error);
                 analysisInProgress = false;
                 
-                // Ensure resource blocking is disabled on error
-                try {
-                    await disableResourceBlocking();
-                } catch (cleanupError) {
-                    console.error("background.js: Error during cleanup:", cleanupError);
-                }
+                // Resource blocking disabled for debugging
+                console.log("background.js: Skipping resource blocking cleanup (disabled for debugging)");
                 
                 sendResponse({ success: false, message: error.message || "Unknown error occurred" });
             }
@@ -146,8 +92,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         shouldStopAnalysis = true;
         analysisInProgress = false;
         
-        // Disable resource blocking
-        await disableResourceBlocking();
+        // Resource blocking disabled for debugging
+        console.log("background.js: Skipping resource blocking cleanup on stop (disabled for debugging)");
         
         // Close all monitored tabs
         const tabsToClose = Array.from(monitoredTabs);
@@ -248,8 +194,8 @@ async function startAnalysis(activeTab) {
         monitoredTabs.clear();
         analysisInProgress = false;
         
-        // Ensure resource blocking is disabled on error
-        await disableResourceBlocking();
+        // Resource blocking disabled for debugging
+        console.log("background.js: Skipping resource blocking cleanup on error (disabled for debugging)");
         
         throw e;
     }
@@ -470,8 +416,8 @@ async function processAsinQueue(asins, reportTabId, domain) {
     // 6. Send completion message after the loop finishes
     analysisInProgress = false;
     
-    // Disable resource blocking when analysis completes
-    await disableResourceBlocking();
+    // Resource blocking disabled for debugging
+    console.log("background.js: Skipping resource blocking cleanup on completion (disabled for debugging)");
     
     const completionMessage = shouldStopAnalysis ? "Analysis stopped by user." : "All ASINs processed.";
     console.log(`background.js: ${completionMessage}`);
