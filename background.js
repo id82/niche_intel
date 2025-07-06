@@ -22,6 +22,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     return;
                 }
                 
+                // Check if this is a search page (/s) with a keyword (k=)
+                const url = new URL(activeTab.url);
+                if (!url.pathname.includes('/s') || !url.searchParams.has('k')) {
+                    console.error("background.js: Not an Amazon search page.");
+                    sendResponse({ 
+                        success: false, 
+                        message: "Please navigate to an Amazon search page first.\n\nSearch for products using Amazon's search box, then run the analysis from the search results page.\n\nExample: Search for 'inspiring stories for kids' and then click the extension." 
+                    });
+                    return;
+                }
+                
+                // Extract and decode the keyword
+                const keyword = decodeURIComponent(url.searchParams.get('k')).replace(/\+/g, ' ');
+                console.log(`background.js: Detected search keyword: "${keyword}"`);
+                
+                // Store keyword for use in report
+                await chrome.storage.local.set({ searchKeyword: keyword });
+                
                 analysisInProgress = true;
                 shouldStopAnalysis = false;
                 console.log("background.js: Starting analysis on tab", activeTab.id);
@@ -103,10 +121,12 @@ async function startAnalysis(activeTab) {
 
         // 4. Store initial data and create the report tab
         console.log("background.js: Storing SERP data and ASIN queue in local storage.");
+        const { searchKeyword } = await chrome.storage.local.get(['searchKeyword']);
         await chrome.storage.local.set({ 
             serpData: serpData,
             asinsToProcess: asinsToProcess,
-            currentDomain: domain
+            currentDomain: domain,
+            searchKeyword: searchKeyword
         });
         
         console.log("background.js: Creating report tab.");
@@ -356,7 +376,7 @@ async function processAsinQueue(asins, reportTabId, domain) {
         }).catch(err => console.warn(`background.js: Could not send completion message to report tab: ${err.message}`));
     }
     console.log("background.js: Cleaning up local storage.");
-    chrome.storage.local.remove(['serpData', 'asinsToProcess', 'currentDomain']); // Clean up storage
+    chrome.storage.local.remove(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']); // Clean up storage
 }
 
 // Handle manual tab closures by users

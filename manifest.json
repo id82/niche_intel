@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Amazon SERP Deep-Dive (Functional Test)",
-  "version": "1.75",
+  "version": "1.76",
   "description": "Performs SERP analysis and deep-dives on the first 10 products for testing.",
   "permissions": [
     "activeTab",

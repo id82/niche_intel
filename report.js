@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     createImageHoverModal();
 
     console.log("report.js: Loading initial data from local storage.");
-    const { serpData, asinsToProcess, currentDomain } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain']);
+    const { serpData, asinsToProcess, currentDomain, searchKeyword } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']);
 
     if (!serpData || !asinsToProcess) {
         console.error("report.js: Could not load initial data from storage.");
@@ -17,6 +17,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     console.log("report.js: Initial data loaded successfully.", { serpData, asinsToProcess });
+    
+    // Update header with search keyword if available
+    if (searchKeyword) {
+        const headerTitle = document.querySelector('.header h1');
+        if (headerTitle) {
+            headerTitle.innerHTML = `NicheIntel Pro by <a href="https://adigy.ai" target="_blank" class="adigy-link">Adigy.AI</a> - Ads Automation for Publishers - "${searchKeyword}"`;
+        }
+        // Also update page title
+        document.title = `NicheIntel Pro - ${searchKeyword}`;
+    }
+    
     let processedCount = 0;
     const totalToProcess = asinsToProcess.length;
     let allData = []; // To store data for all processed ASINs
@@ -99,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('exportData').style.display = 'inline-block';
             
             // Clean up - clear stored data to prevent memory leaks
-            chrome.storage.local.remove(['serpData', 'asinsToProcess', 'currentDomain'])
+            chrome.storage.local.remove(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword'])
                 .then(() => console.log("report.js: Cleaned up storage after analysis completion"))
                 .catch(err => console.warn("report.js: Failed to clean up storage:", err));
         }
