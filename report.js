@@ -42,11 +42,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log("report.js: Received message from background script:", request);
         if (request.command === "update-row") {
-            console.log(`report.js: Updating row for ASIN ${request.asin}.`);
+            console.log(`report.js: Updating row for ASIN ${request.asin}. Raw data:`, request.data);
             const rowData = { ...request.data, asin: request.asin };
             // Also add the initial product info from SERP data to have all data in one place
             const initialProductInfo = serpData.productInfo[request.asin] || {};
             const combinedData = { ...initialProductInfo, ...rowData };
+            console.log(`report.js: Combined data for ASIN ${request.asin}:`, combinedData);
             
             // Update author info if the individual page has better data
             if (rowData.author_info && rowData.author_info.name) {
@@ -465,13 +466,17 @@ function updateTableRow(asin, data) {
 
     const updateCell = (id, value, format) => {
         const cell = document.getElementById(id);
+        console.log(`report.js: Updating cell ${id} for ASIN ${asin}. Found cell:`, !!cell, 'Value:', value);
         if (cell) {
             let displayValue = 'N/A';
             if (value !== null) {
                 displayValue = format ? format(value) : value;
             }
+            console.log(`report.js: Setting ${id} to "${displayValue}"`);
             cell.textContent = displayValue;
             cell.classList.remove('placeholder');
+        } else {
+            console.warn(`report.js: Cell with ID "${id}" not found for ASIN ${asin}`);
         }
     };
 
