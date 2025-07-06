@@ -36,7 +36,7 @@ async function enableResourceBlocking() {
                     "amazon.it", "amazon.es", "amazon.nl", "amazon.com.au", 
                     "amazon.co.jp", "amazon.pl", "amazon.se", "amazon.ca"
                 ],
-                "resourceTypes": ["image", "media", "font", "stylesheet"]
+                "resourceTypes": ["image", "font"]
             }
         };
 
@@ -170,9 +170,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         shouldStopAnalysis = true;
         analysisInProgress = false;
         
-        // Clean up resource blocking on stop - async approach from testing.md
+        // Clean up resource blocking on stop - disabled for debugging
         (async () => {
-            await disableResourceBlocking();
+            console.log("background.js: Resource blocking cleanup skipped on stop (blocking was disabled)");
             
             const tabsToClose = Array.from(monitoredTabs);
             tabsToClose.forEach(async (tabId) => {
@@ -273,8 +273,8 @@ async function startAnalysis(activeTab) {
         monitoredTabs.clear();
         analysisInProgress = false;
         
-        // Clean up resource blocking on error
-        await disableResourceBlocking();
+        // Resource blocking cleanup disabled (since blocking was disabled)
+        console.log("background.js: Resource blocking cleanup skipped on error (blocking was disabled)");
         
         throw e;
     }
@@ -417,9 +417,8 @@ async function processSingleAsin(asin, domain, maxRetries = 2) {
 async function processAsinQueue(asins, reportTabId, domain) {
     console.log("background.js: Starting to process ASIN queue:", asins);
 
-    // Enable resource blocking just before processing background tabs
-    console.log("background.js: Enabling resource blocking for background tab processing");
-    await enableResourceBlocking();
+    // Temporarily disable resource blocking to debug data extraction issue
+    console.log("background.js: Resource blocking temporarily disabled for debugging");
 
     const BATCH_SIZE = 5; // Process 5 ASINs concurrently
     const batches = [];
@@ -453,15 +452,20 @@ async function processAsinQueue(asins, reportTabId, domain) {
                 }
                 
                 const deepDiveData = await processSingleAsin(asin, domain);
+                console.log(`background.js: Extracted data for ASIN ${asin}:`, deepDiveData);
                 
                 // Send update to report tab immediately when ready
                 if (reportTabId) {
                     console.log(`background.js: Sending 'update-row' message for ASIN ${asin} to report tab ${reportTabId}.`);
-                    chrome.tabs.sendMessage(reportTabId, {
+                    const messageResult = await chrome.tabs.sendMessage(reportTabId, {
                         command: "update-row",
                         asin: asin,
                         data: deepDiveData
-                    }).catch(err => console.warn(`background.js: Could not send message to report tab: ${err.message}`));
+                    }).catch(err => {
+                        console.error(`background.js: Failed to send message to report tab: ${err.message}`);
+                        return null;
+                    });
+                    console.log(`background.js: Message sent result for ASIN ${asin}:`, messageResult);
                 }
                 
                 return { asin, success: true, data: deepDiveData };
@@ -499,8 +503,8 @@ async function processAsinQueue(asins, reportTabId, domain) {
     // 6. Send completion message after the loop finishes
     analysisInProgress = false;
     
-    // Clean up resource blocking on completion
-    await disableResourceBlocking();
+    // Resource blocking cleanup disabled (since blocking was disabled)
+    console.log("background.js: Resource blocking cleanup skipped (blocking was disabled)");
     
     const completionMessage = shouldStopAnalysis ? "Analysis stopped by user." : "All ASINs processed.";
     console.log(`background.js: ${completionMessage}`);
