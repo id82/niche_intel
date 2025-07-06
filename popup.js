@@ -32,8 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
         addLoadingSpinner('Starting analysis...');
 
         // Send a message to the background script to start the analysis
-        console.log("popup.js: Sending 'start-analysis' command to background script.");
+        console.log("popup.js: About to send 'start-analysis' command to background script.");
+        
+        // Add timeout for debugging
+        const messageTimeout = setTimeout(() => {
+            console.error("popup.js: Message timeout - no response from background script");
+            updateStatus('❌ Communication timeout with background script', 'error');
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        }, 10000);
+        
         chrome.runtime.sendMessage({ command: "start-analysis" }, (response) => {
+            clearTimeout(messageTimeout);
+            console.log("popup.js: Received response from background script:", response);
             if (chrome.runtime.lastError) {
                 console.error("popup.js: Error sending message:", chrome.runtime.lastError);
                 updateStatus('❌ Error. Try reloading the page.', 'error');

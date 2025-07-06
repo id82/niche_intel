@@ -55,6 +55,7 @@ async function disableResourceBlocking() {
 
 // Listens for the "start-analysis" command from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log("background.js: Message received:", request.command);
     if (request.command === "start-analysis") {
         (async () => {
             try {
@@ -100,8 +101,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 // Enable resource blocking for faster page loads
                 console.log("background.js: About to enable resource blocking");
-                await enableResourceBlocking();
-                console.log("background.js: Resource blocking setup complete");
+                // Temporarily disable resource blocking for debugging
+                // await enableResourceBlocking();
+                console.log("background.js: Resource blocking setup complete (DISABLED FOR DEBUGGING)");
                 
                 console.log("background.js: Starting analysis on tab", activeTab.id);
                 await startAnalysis(activeTab); 
