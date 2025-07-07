@@ -2,15 +2,17 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
     background-color: #f8fafc;
-    min-height: 100vh;
-    padding-bottom: 80px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .header {
     background-color: #1e293b;
     color: white;
     padding: 20px;
-    position: relative;
+    flex-shrink: 0;
     z-index: 10;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
@@ -18,14 +20,12 @@ body {
 .footer {
     background-color: #1e293b;
     color: white;
-    padding: 0;
+    padding: 10px 20px;
     margin: 0;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    flex-shrink: 0;
     z-index: 10;
     box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    text-align: center;
 }
 
 .header-content {
@@ -96,21 +96,25 @@ body {
 }
 
 #table-container {
+    flex: 1;
     overflow: auto;
     background-color: white;
     margin: 20px;
-    max-height: calc(100vh - 240px);
     position: relative;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
 }
 
 table {
     width: 100%;
-    border-collapse: collapse;
     background-color: white;
     border-radius: 12px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 th, td {
@@ -122,6 +126,15 @@ th, td {
     transition: all 0.2s ease;
 }
 
+thead {
+    flex-shrink: 0;
+    background-color: #1e293b;
+}
+
+thead tr {
+    display: flex;
+}
+
 th {
     background-color: #1e293b;
     color: white;
@@ -131,12 +144,10 @@ th {
     font-size: 11px;
     letter-spacing: 0.5px;
     padding: 12px 8px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     white-space: nowrap;
     line-height: 1.2;
+    flex: 1;
+    min-width: 0;
 }
 
 /* Keep Title & Author header left aligned */
@@ -180,8 +191,9 @@ th:nth-child(4) {
 /* Title and Author cell content should be left aligned */
 .title-author-cell {
     text-align: left;
-    max-width: 300px;
+    flex: 2 !important;
     min-width: 200px;
+    max-width: 300px;
 }
 
 /* All other table cells center aligned except totals labels */
@@ -268,17 +280,31 @@ th:nth-child(n+6), td:nth-child(n+6) {
     text-align: center;
 }
 
+tbody {
+    flex: 1;
+    overflow-y: auto;
+    display: block;
+}
+
+tbody tr {
+    display: flex;
+    transition: all 0.3s ease;
+}
+
+tbody td {
+    flex: 1;
+    min-width: 0;
+}
+
 /* Sticky footer for totals */
 tfoot {
-    position: sticky;
-    bottom: 0;
-    z-index: 99;
+    flex-shrink: 0;
     background-color: white;
     box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
 }
 
 tfoot tr {
-    height: auto;
+    display: flex;
 }
 
 tfoot td {
@@ -286,6 +312,8 @@ tfoot td {
     white-space: nowrap;
     font-size: 12px;
     line-height: 1.2;
+    flex: 1;
+    min-width: 0;
 }
 
 /* Right align all numeric cells in totals row */
@@ -451,11 +479,6 @@ th.sortable.sort-desc::after {
     transition: width 0.3s ease !important;
 }
 
-/* Footer text styling */
-.footer {
-    text-align: center;
-    padding: 10px 20px;
-}
 
 /* Card-like styling for individual rows */
 tbody tr {
