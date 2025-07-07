@@ -387,10 +387,20 @@ tfoot td {
     border-bottom: none;
 }
 
-/* Keep the first column (label) left aligned in totals row */
+/* Keep the first column (label) left aligned in totals row and span first 5 columns */
 #totals-row td:first-child {
     justify-content: flex-start;
     text-align: left;
+    flex: 0 0 calc(40px + 120px + 100px + 60px + 200px);
+    min-width: calc(40px + 120px + 100px + 60px + 200px);
+    max-width: calc(40px + 120px + 100px + 60px + 200px);
+}
+
+/* Align totals row data cells with regular table columns */
+#totals-row td:nth-child(2) {
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
 }
 
 /* Styling for high royalty totals row */
@@ -407,10 +417,20 @@ tfoot td {
     border-bottom: none;
 }
 
-/* Keep the first column (label) left aligned in high royalty totals row */
+/* Keep the first column (label) left aligned in high royalty totals row and span first 5 columns */
 #high-royalty-totals-row td:first-child {
     justify-content: flex-start;
     text-align: left;
+    flex: 0 0 calc(40px + 120px + 100px + 60px + 200px);
+    min-width: calc(40px + 120px + 100px + 60px + 200px);
+    max-width: calc(40px + 120px + 100px + 60px + 200px);
+}
+
+/* Align high royalty totals row data cells with regular table columns */
+#high-royalty-totals-row td:nth-child(2) {
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
 }
 
 /* Ensure header buttons are visible */
