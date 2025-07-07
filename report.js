@@ -1768,15 +1768,34 @@ function setupScrollSynchronization() {
     
     const filterContainer = document.getElementById('filter-container');
     const tableContainer = document.getElementById('table-container');
+    const tbody = document.querySelector('tbody');
+    const table = document.querySelector('table');
     
-    if (!filterContainer || !tableContainer) {
-        console.warn('Cannot set up scroll sync: containers not found');
+    if (!filterContainer) {
+        console.warn('Cannot set up scroll sync: filter container not found');
+        return;
+    }
+    
+    // Find the actual scrollable table element
+    let scrollableTableElement = null;
+    const candidates = [tableContainer, tbody, table];
+    
+    for (const candidate of candidates) {
+        if (candidate && candidate.scrollWidth > candidate.clientWidth) {
+            scrollableTableElement = candidate;
+            console.log('Found scrollable table element:', candidate.tagName || candidate.id);
+            break;
+        }
+    }
+    
+    if (!scrollableTableElement) {
+        console.warn('No scrollable table element found');
         return;
     }
     
     console.log('Setting up scroll synchronization');
     console.log('Filter container:', filterContainer);
-    console.log('Table container:', tableContainer);
+    console.log('Scrollable table element:', scrollableTableElement);
     
     let isFilterScrolling = false;
     let isTableScrolling = false;
@@ -1785,14 +1804,14 @@ function setupScrollSynchronization() {
     filterContainer.addEventListener('scroll', function(e) {
         if (!isTableScrolling) {
             isFilterScrolling = true;
-            tableContainer.scrollLeft = this.scrollLeft;
-            console.log('Filter scrolled to:', this.scrollLeft, 'syncing table to:', tableContainer.scrollLeft);
+            scrollableTableElement.scrollLeft = this.scrollLeft;
+            console.log('Filter scrolled to:', this.scrollLeft, 'syncing table to:', scrollableTableElement.scrollLeft);
             setTimeout(() => { isFilterScrolling = false; }, 50);
         }
     });
     
     // Sync table scroll to filter scroll
-    tableContainer.addEventListener('scroll', function(e) {
+    scrollableTableElement.addEventListener('scroll', function(e) {
         if (!isFilterScrolling) {
             isTableScrolling = true;
             filterContainer.scrollLeft = this.scrollLeft;
@@ -1801,20 +1820,7 @@ function setupScrollSynchronization() {
         }
     });
     
-    // Test if containers are actually scrollable
-    setTimeout(() => {
-        console.log('Filter container scrollWidth:', filterContainer.scrollWidth, 'clientWidth:', filterContainer.clientWidth);
-        console.log('Table container scrollWidth:', tableContainer.scrollWidth, 'clientWidth:', tableContainer.clientWidth);
-        
-        // Test scroll
-        console.log('Testing scroll: setting table scrollLeft to 100');
-        tableContainer.scrollLeft = 100;
-        setTimeout(() => {
-            console.log('After test scroll - Table scrollLeft:', tableContainer.scrollLeft, 'Filter scrollLeft:', filterContainer.scrollLeft);
-        }, 100);
-    }, 200);
-    
     scrollSyncInitialized = true;
-    console.log('Scroll synchronization initialized');
+    console.log('Scroll synchronization initialized successfully');
 }
 
