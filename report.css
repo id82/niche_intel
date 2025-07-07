@@ -180,6 +180,8 @@ th:nth-child(4) {
 /* Title and Author cell content should be left aligned */
 .title-author-cell {
     text-align: left;
+    max-width: 300px;
+    min-width: 200px;
 }
 
 /* All other table cells center aligned except totals labels */
@@ -243,6 +245,9 @@ tbody tr:hover {
     font-size: 14px;
     color: #2d3748;
     line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
 
 .author {

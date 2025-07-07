@@ -152,6 +152,39 @@ function getTypeTooltip(type) {
     return tooltips[type] || `${type} - placement type`;
 }
 
+function getTruncatedTitle(title, maxLength = 60) {
+    if (!title || title === 'N/A') return title;
+    
+    // Calculate dynamic max length based on viewport width
+    const viewportWidth = window.innerWidth;
+    let dynamicMaxLength = maxLength;
+    
+    // Adjust max length based on viewport width
+    if (viewportWidth < 1200) {
+        dynamicMaxLength = 60;  // Narrow viewport
+    } else if (viewportWidth < 1600) {
+        dynamicMaxLength = 80;  // Medium viewport
+    } else {
+        dynamicMaxLength = 120; // Wide viewport
+    }
+    
+    if (title.length <= dynamicMaxLength) {
+        return title;
+    }
+    
+    // Truncate at word boundary when possible
+    const truncated = title.substring(0, dynamicMaxLength);
+    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    
+    if (lastSpaceIndex > dynamicMaxLength * 0.8) {
+        // If we can find a space in the last 20% of the truncated string, use it
+        return truncated.substring(0, lastSpaceIndex) + '...';
+    } else {
+        // Otherwise just truncate at character limit
+        return truncated + '...';
+    }
+}
+
 function renderInitialTable(serpData, asinsToProcess, container, currentDomain) {
     console.log("report.js: Rendering initial table.");
     const { productInfo, positions } = serpData;
@@ -218,7 +251,9 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
             }
         }
         
-        const titleWithBadge = badgeHTML + (product.title || 'N/A');
+        const originalTitle = product.title || 'N/A';
+        const truncatedTitle = getTruncatedTitle(originalTitle);
+        const titleWithBadge = badgeHTML + truncatedTitle;
         
         tableHTML += `
             <tr data-asin="${asin}">
@@ -227,7 +262,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                 <td class="asin-cell"><a href="https://${currentDomain}/dp/${asin}" target="_blank">${asin}</a></td>
                 <td><img src="${product.coverUrl || ''}" class="cover-image"/></td>
                 <td class="title-author-cell">
-                    <div class="title" id="title-${asin}">${titleWithBadge}</div>
+                    <div class="title" id="title-${asin}" title="${originalTitle}" data-full-title="${originalTitle}">${titleWithBadge}</div>
                     <div class="author">${(product.authors && product.authors.length > 0) ? product.authors.join(', ') : 'N/A'}</div>
                 </td>
                 <td id="price-${asin}" class="placeholder">...</td>
@@ -1304,4 +1339,21 @@ function addImageHoverEvents() {
         });
     }
 }
+
+// Add resize listener to re-truncate titles when viewport width changes
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    // Debounce resize events to avoid excessive re-calculations
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // Re-truncate all titles based on new viewport width
+        document.querySelectorAll('.title[data-full-title]').forEach(titleElement => {
+            const fullTitle = titleElement.getAttribute('data-full-title');
+            const badgeHTML = titleElement.querySelector('.badge-bubble')?.outerHTML || '';
+            const truncatedTitle = getTruncatedTitle(fullTitle);
+            titleElement.innerHTML = badgeHTML + truncatedTitle;
+            titleElement.setAttribute('title', fullTitle);
+        });
+    }, 250); // Wait 250ms after resize stops
+});
 
