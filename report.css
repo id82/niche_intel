@@ -3,15 +3,29 @@ body {
     margin: 0;
     background-color: #f8fafc;
     min-height: 100vh;
+    padding-bottom: 80px;
 }
 
-.header, .footer {
+.header {
     background-color: #1e293b;
     color: white;
     padding: 20px;
     position: relative;
     z-index: 10;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.footer {
+    background-color: #1e293b;
+    color: white;
+    padding: 0;
+    margin: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
 }
 
 .header-content {
@@ -64,9 +78,6 @@ body {
     transform: translateY(-1px);
 }
 
-.footer {
-    text-align: center;
-}
 
 .header h1 {
     margin: 0;
@@ -435,11 +446,10 @@ th.sortable.sort-desc::after {
     transition: width 0.3s ease !important;
 }
 
-/* Footer modernization */
+/* Footer text styling */
 .footer {
-    background-color: #1e293b;
     text-align: center;
-    margin-top: 40px;
+    padding: 10px 20px;
 }
 
 /* Card-like styling for individual rows */
