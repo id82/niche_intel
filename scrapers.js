@@ -1066,7 +1066,7 @@ function runFullProductPageExtraction() {
 
         // Use .includes() for more flexible matching (e.g., "Mass Market Paperback")
         if (book_type.includes('paperback')) {
-            if (page_count >= 24 && page_count <= 108) {
+            if (page_count >= 24 && page_count < 110) {
                 const costs = { USD: 2.30, CAD: 2.99, YEN: 422, GBP: 1.93, AUD: 4.74, EU: 2.05, PL: 9.58, SE: 22.84 };
                 const largeCosts = { USD: 2.84, CAD: 3.53, YEN: 530, GBP: 2.15, AUD: 5.28, EU: 2.48, PL: 11.61, SE: 27.67 };
                 printing_cost = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey];
@@ -1518,6 +1518,67 @@ function parseProductPageFromHTML(htmlString, url) {
         return Object.keys(reviews).length > 0 ? reviews : null;
     }
 
+    // --- Adapted Author Info Extraction ---
+    function _extractAuthorInfo(doc) {
+        console.log("Offscreen: Starting extractAuthorInfo extraction");
+        
+        // This selector for byline authors is stable and does not need changes.
+        const bylineAuthors = [...doc.querySelectorAll('#bylineInfo .author a.a-link-normal')]
+            .map(a => cleanText(a.textContent))
+            .filter(Boolean);
+        console.log("Offscreen: Byline authors found:", bylineAuthors);
+
+        // Use a more robust selector for the main author card container.
+        // It combines a stable part of the ID with a stable part of the class name.
+        const authorCard = doc.querySelector('div[id^="CardInstance"][class*="_about-the-author-card_style_cardParentDiv"]');
+        console.log("Offscreen: Author card found:", !!authorCard);
+        
+        let biography = null, imageUrl = null, cardAuthorName = null;
+
+        if (authorCard) {
+            // Extract biography using a selector that ignores the unique hash.
+            biography = getText(authorCard, 'div[class*="_peekableContent"]');
+            console.log("Offscreen: Biography extracted:", biography ? "Found" : "Not found");
+            if (biography?.includes("Discover more of the author's books")) {
+                biography = null;
+                console.log("Offscreen: Biography cleared (generic message detected)");
+            }
+            
+            // Extract image URL using a stable class selector.
+            imageUrl = getAttr(authorCard, 'img[class*="_authorImage"]', 'src');
+            console.log("Offscreen: Image URL extracted:", imageUrl ? "Found" : "Not found");
+
+            // Extract the author's name using a more specific and stable selector, avoiding generic tags like 'h2'.
+            cardAuthorName = getText(authorCard, 'div[class*="_authorName"] a');
+            console.log("Offscreen: Card author name extracted:", cardAuthorName);
+        }
+        
+        // Prioritize byline authors if they exist, otherwise use the name from the card.
+        const authorName = bylineAuthors.length > 0 ? bylineAuthors.join(', ') : cardAuthorName;
+        console.log("Offscreen: Final author name:", authorName);
+        
+        if (!authorName) {
+            console.warn("Offscreen: No author name found, returning null");
+            return null;
+        }
+        
+        // Check if the image is the default placeholder.
+        const validImage = imageUrl && imageUrl !== "https://m.media-amazon.com/images/I/01Kv-W2ysOL._SY600_.png";
+        
+        // Count words in the biography.
+        const bioWordCount = biography ? biography.trim().split(/\s+/).length : 0;
+        
+        const result = { 
+            name: authorName, 
+            biography, 
+            imageUrl, 
+            validImage, 
+            bioWordCount 
+        };
+        console.log("Offscreen: Final author info result:", result);
+        return result;
+    }
+
     // Simplified fallback calculation for offscreen parser
     function _calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo) {
         console.log("Offscreen: Using simplified fallback royalty calculation");
@@ -1631,7 +1692,7 @@ function parseProductPageFromHTML(htmlString, url) {
 
         // Use .includes() for more flexible matching
         if (book_type.includes('paperback')) {
-            if (page_count >= 24 && page_count <= 108) {
+            if (page_count >= 24 && page_count < 110) {
                 const costs = { USD: 2.30, CAD: 2.99, YEN: 422, GBP: 1.93, AUD: 4.74, EU: 2.05, PL: 9.58, SE: 22.84 };
                 const largeCosts = { USD: 2.84, CAD: 3.53, YEN: 530, GBP: 2.15, AUD: 5.28, EU: 2.48, PL: 11.61, SE: 27.67 };
                 printing_cost = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey];
@@ -1717,6 +1778,7 @@ function parseProductPageFromHTML(htmlString, url) {
         aplus_content: { modulesCount: findAll('[data-aplus-module], .aplus-module').length },
         ugc_videos: { video_count: findAll('[data-video-url], .video-block').length },
         editorial_reviews: _extractEditorialReviews(doc),
+        author_info: _extractAuthorInfo(doc),
         royalties: null // Will be calculated below
     };
 

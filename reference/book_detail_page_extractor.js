@@ -556,7 +556,7 @@ function runFullProductPageExtraction() {
         let is_supported = true;
 
         if (book_type === 'paperback') {
-            if (page_count >= 24 && page_count <= 108) {
+            if (page_count >= 24 && page_count <= 110) {
                 const costs = { USD: 2.30, CAD: 2.99, YEN: 422, GBP: 1.93, AUD: 4.74, EU: 2.05, PL: 9.58, SE: 22.84 };
                 const largeCosts = { USD: 2.84, CAD: 3.53, YEN: 530, GBP: 2.15, AUD: 5.28, EU: 2.48, PL: 11.61, SE: 27.67 };
                 printing_cost = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey];

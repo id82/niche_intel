@@ -347,7 +347,7 @@ function calculateMonthlyMetrics(bookData) {
 
         if (bookType === 'paperback') {
             if (interior_type === 'Black Ink') {
-                if (page_count >= 24 && page_count <= 108) {
+                if (page_count >= 24 && page_count < 110) {
                     const costs = { 'Amazon.com': 2.30, 'Amazon.ca': 2.99, 'Amazon.co.jp': 422, 'Amazon.co.uk': 1.93, 'Amazon.com.au': 4.74, 'EU': 2.05, 'Amazon.pl': 9.58, 'Amazon.se': 22.84 };
                     const largeCosts = { 'Amazon.com': 2.84, 'Amazon.ca': 3.53, 'Amazon.co.jp': 530, 'Amazon.co.uk': 2.15, 'Amazon.com.au': 5.28, 'EU': 2.48, 'Amazon.pl': 11.61, 'Amazon.se': 27.67 };
                     const marketKey = eu_stores.includes(marketplace) ? 'EU' : marketplace;
@@ -469,7 +469,7 @@ function createInfoTable(bookData, metrics) {
     `;
     
     // Create table data with reordered columns: Pages 3rd, Large Trim 9th
-    const labels = ['ASIN', 'Price', 'Pages', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'Royalty/Unit', 'Monthly Royalty'];
+    const labels = ['ASIN', 'Price', 'Pages', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'Royalty/Book', 'Est. Monthly Royalty'];
     const values = [
         bookData.asin || 'N/A',
         bookData.listPrice ? `$${bookData.listPrice.toFixed(2)}` : 'N/A',
