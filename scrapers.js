@@ -929,6 +929,83 @@ function runFullProductPageExtraction() {
         return { code: 'USD' }; // Default fallback
     }
 
+    // Simplified fallback calculation that mirrors the working mini table logic
+    function calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo) {
+        console.log("scrapers.js: Using simplified fallback royalty calculation");
+        
+        // Extract available data with fallbacks
+        const prices = format.prices || [];
+        let price = null;
+        
+        if (prices.length > 0) {
+            // Use the same logic as mini table: highest price as list price
+            const validPrices = prices.filter(p => p.price && p.price > 0).map(p => p.price);
+            if (validPrices.length > 0) {
+                price = Math.max(...validPrices);
+            }
+        }
+        
+        const bsr = productDetails.bsr || null;
+        const pageCount = productDetails.print_length || 100; // Fallback to reasonable default
+        const market_code = marketplaceInfo.code || 'USD';
+        
+        if (!price) {
+            console.warn("scrapers.js: No valid price found for simplified calculation");
+            return { error: "No valid price found" };
+        }
+        
+        // Calculate sales using existing logic if BSR is available
+        let monthly_sales = 0;
+        if (bsr) {
+            const book_type = format.formatName.toLowerCase();
+            const daily_sales = estimateSales(bsr, book_type, market_code);
+            monthly_sales = Math.round(daily_sales * 30);
+        } else {
+            // Provide a reasonable estimate if BSR is missing
+            monthly_sales = 10; // Conservative fallback
+            console.warn("scrapers.js: No BSR available, using fallback monthly sales estimate");
+        }
+        
+        // Simplified royalty calculation (mirrors mini table logic)
+        let royaltyPerUnit = 0;
+        const book_type = format.formatName.toLowerCase();
+        
+        if (book_type.includes('kindle') || book_type.includes('ebook')) {
+            // Simplified Kindle royalty calculation
+            if (price >= 2.99 && price <= 9.99) {
+                royaltyPerUnit = price * 0.7; // 70% royalty
+            } else {
+                royaltyPerUnit = price * 0.35; // 35% royalty
+            }
+        } else {
+            // Simplified paperback royalty calculation
+            const printingCost = 0.85 + (pageCount * 0.012); // Simplified printing cost
+            const royaltyRate = price < 10 ? 0.5 : 0.6; // Simplified royalty rate
+            royaltyPerUnit = Math.max(0, (price * royaltyRate) - printingCost);
+        }
+        
+        const monthly_royalty = Math.round(royaltyPerUnit * monthly_sales);
+        
+        console.log("scrapers.js: Simplified calculation result:", {
+            royalty_per_unit: royaltyPerUnit.toFixed(2),
+            monthly_sales,
+            monthly_royalty
+        });
+        
+        return {
+            royalty_per_unit: parseFloat(royaltyPerUnit.toFixed(2)),
+            monthly_sales: monthly_sales,
+            monthly_royalty: monthly_royalty,
+            calculation_assumptions: {
+                simplified: true,
+                price_used: price,
+                page_count_used: pageCount,
+                bsr_used: bsr,
+                book_type: book_type
+            }
+        };
+    }
+
     function calculateRoyaltyAndSales(format, productDetails, marketplaceInfo) {
         console.log("scrapers.js: Starting calculateRoyaltyAndSales for format:", format.formatName);
         const book_type = format.formatName.toLowerCase();
@@ -946,9 +1023,11 @@ function runFullProductPageExtraction() {
         
         const page_count = productDetails.print_length;
         const bsr = productDetails.bsr;
+        
+        // If essential data is missing, try simplified fallback calculation (like mini table)
         if (!list_price || !page_count || !bsr) {
-            console.error("scrapers.js: Missing essential data for royalty calculation.", { list_price, page_count, bsr });
-            return { error: "Missing essential data (price, page count, or BSR)." };
+            console.warn("scrapers.js: Missing essential data for complex calculation, attempting simplified fallback.", { list_price, page_count, bsr });
+            return calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo);
         }
 
         const market_code = marketplaceInfo.code;
@@ -985,8 +1064,8 @@ function runFullProductPageExtraction() {
         } else { is_supported = false; }
 
         if (!is_supported || !printing_cost) {
-            console.warn(`scrapers.js: Combination not supported (Type: ${book_type}, Pages: ${page_count})`);
-            return { error: `Combination not supported (Type: ${book_type}, Pages: ${page_count})` };
+            console.warn(`scrapers.js: Combination not supported (Type: ${book_type}, Pages: ${page_count}), falling back to simplified calculation`);
+            return calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo);
         }
         printing_cost = parseFloat(printing_cost.toFixed(2));
         console.log(`scrapers.js: Calculated printing cost: ${printing_cost}`);
@@ -1384,6 +1463,83 @@ function parseProductPageFromHTML(htmlString, url) {
         return Object.keys(reviews).length > 0 ? reviews : null;
     }
 
+    // Simplified fallback calculation for offscreen parser
+    function _calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo) {
+        console.log("Offscreen: Using simplified fallback royalty calculation");
+        
+        // Extract available data with fallbacks
+        const prices = format.prices || [];
+        let price = null;
+        
+        if (prices.length > 0) {
+            // Use the same logic as mini table: highest price as list price
+            const validPrices = prices.filter(p => p.price && p.price > 0).map(p => p.price);
+            if (validPrices.length > 0) {
+                price = Math.max(...validPrices);
+            }
+        }
+        
+        const bsr = productDetails.bsr || null;
+        const pageCount = productDetails.print_length || 100; // Fallback to reasonable default
+        const market_code = marketplaceInfo.code || 'USD';
+        
+        if (!price) {
+            console.warn("Offscreen: No valid price found for simplified calculation");
+            return { error: "No valid price found" };
+        }
+        
+        // Calculate sales using existing logic if BSR is available
+        let monthly_sales = 0;
+        if (bsr) {
+            const book_type = format.formatName.toLowerCase();
+            const daily_sales = _estimateSales(bsr, book_type, market_code);
+            monthly_sales = Math.round(daily_sales * 30);
+        } else {
+            // Provide a reasonable estimate if BSR is missing
+            monthly_sales = 10; // Conservative fallback
+            console.warn("Offscreen: No BSR available, using fallback monthly sales estimate");
+        }
+        
+        // Simplified royalty calculation (mirrors mini table logic)
+        let royaltyPerUnit = 0;
+        const book_type = format.formatName.toLowerCase();
+        
+        if (book_type.includes('kindle') || book_type.includes('ebook')) {
+            // Simplified Kindle royalty calculation
+            if (price >= 2.99 && price <= 9.99) {
+                royaltyPerUnit = price * 0.7; // 70% royalty
+            } else {
+                royaltyPerUnit = price * 0.35; // 35% royalty
+            }
+        } else {
+            // Simplified paperback royalty calculation
+            const printingCost = 0.85 + (pageCount * 0.012); // Simplified printing cost
+            const royaltyRate = price < 10 ? 0.5 : 0.6; // Simplified royalty rate
+            royaltyPerUnit = Math.max(0, (price * royaltyRate) - printingCost);
+        }
+        
+        const monthly_royalty = Math.round(royaltyPerUnit * monthly_sales);
+        
+        console.log("Offscreen: Simplified calculation result:", {
+            royalty_per_unit: royaltyPerUnit.toFixed(2),
+            monthly_sales,
+            monthly_royalty
+        });
+        
+        return {
+            royalty_per_unit: parseFloat(royaltyPerUnit.toFixed(2)),
+            monthly_sales: monthly_sales,
+            monthly_royalty: monthly_royalty,
+            calculation_assumptions: {
+                simplified: true,
+                price_used: price,
+                page_count_used: pageCount,
+                bsr_used: bsr,
+                book_type: book_type
+            }
+        };
+    }
+
     // --- Adapted Royalty Calculation ---
     function _calculateRoyaltyAndSales(format, productDetails, marketplaceInfo) {
         const book_type = format.formatName.toLowerCase();
@@ -1398,8 +1554,11 @@ function parseProductPageFromHTML(htmlString, url) {
         const list_price = listPriceObject ? listPriceObject.price : Math.max(...format.prices.filter(p => p.type !== 'ku_price').map(p => p.price));
         const page_count = productDetails.print_length;
         const bsr = productDetails.bsr;
+        
+        // If essential data is missing, try simplified fallback calculation
         if (!list_price || !page_count || !bsr) {
-            return { error: "Missing essential data (price, page count, or BSR)." };
+            console.warn("Offscreen: Missing essential data for complex calculation, attempting simplified fallback.", { list_price, page_count, bsr });
+            return _calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo);
         }
 
         const market_code = marketplaceInfo.code;
@@ -1434,7 +1593,8 @@ function parseProductPageFromHTML(htmlString, url) {
         } else { is_supported = false; }
 
         if (!is_supported || !printing_cost) {
-            return { error: `Combination not supported (Type: ${book_type}, Pages: ${page_count})` };
+            console.warn(`Offscreen: Combination not supported (Type: ${book_type}, Pages: ${page_count}), falling back to simplified calculation`);
+            return _calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo);
         }
         printing_cost = parseFloat(printing_cost.toFixed(2));
 

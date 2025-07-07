@@ -541,7 +541,10 @@ function runFullProductPageExtraction() {
         
         const page_count = productDetails.print_length;
         const bsr = productDetails.bsr;
-        if (!list_price || !page_count || !bsr) return { error: "Missing essential data (price, page count, or BSR)." };
+        if (!list_price || !page_count || !bsr) {
+            console.warn("Missing essential data for complex calculation, data may be incomplete:", { list_price, page_count, bsr });
+            return { error: "Missing essential data (price, page count, or BSR)." };
+        }
 
         const market_code = marketplaceInfo.code;
         const trim_size = productDetails.large_trim ? 'large' : 'regular';
