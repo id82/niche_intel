@@ -78,6 +78,223 @@ body {
     transform: translateY(-1px);
 }
 
+/* Filter Toggle Styling */
+.filter-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.filter-toggle-container label {
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 20px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 20px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #3b82f6;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* Filter Container Styling */
+.filter-container {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    margin: 0 20px;
+}
+
+/* Filter inputs aligned with table columns */
+.filter-container > div:nth-child(1) { /* Skip first 5 columns */
+    flex: 0 0 588px;
+    min-width: 588px;
+    max-width: 588px;
+}
+
+.filter-container > div:nth-child(2) { /* Price */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.filter-container > div:nth-child(3) { /* Reviews */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.filter-container > div:nth-child(4) { /* Avg Rating */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.filter-container > div:nth-child(5) { /* Review Images */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(6) { /* Formats - skip */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(7) { /* BSR */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(8) { /* Days on Market */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(9) { /* Length */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(10) { /* Large Trim */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(11) { /* A+ Modules */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(12) { /* UGC Videos */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(13) { /* Editorial Reviews */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(14) { /* Royalty/Book */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(15) { /* Royalty/Month */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.filter-container > div:nth-child(16) { /* Publisher - Clear button */
+    flex: 0 0 120px;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+.filter-container > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 4px;
+}
+
+.filter-input,
+.filter-select {
+    width: 100%;
+    padding: 3px 4px;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    font-size: 11px;
+    text-align: center;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    height: 22px;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.filter-button {
+    background-color: #f59e0b;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    width: 100%;
+}
+
+.filter-button:hover {
+    background-color: #d97706;
+}
+
 /* ASIN Focus Input Styling */
 .asin-focus-container {
     display: flex;

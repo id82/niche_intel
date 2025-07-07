@@ -1058,6 +1058,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ASIN Focus functionality
     setupAsinFocus();
+    
+    // Filter functionality
+    setupFilterFunctionality();
 });
 
 function copyAsinsToClipboard() {
@@ -1487,4 +1490,260 @@ sortTable = function(columnIndex, dataType, direction) {
         focusedRowData.parent.insertBefore(focusedRowData.row, focusedRowData.parent.firstChild);
     }
 };
+
+// Filter functionality
+let activeFilters = {};
+
+function setupFilterFunctionality() {
+    const filterToggle = document.getElementById('filterToggle');
+    const filterContainer = document.getElementById('filter-container');
+    const clearFiltersButton = document.getElementById('clearFilters');
+    
+    // Toggle filter container visibility
+    filterToggle.addEventListener('change', function() {
+        if (this.checked) {
+            filterContainer.style.display = 'block';
+        } else {
+            filterContainer.style.display = 'none';
+            // Clear all filters when toggle is turned off
+            clearAllFilters();
+        }
+    });
+    
+    // Clear filters button
+    clearFiltersButton.addEventListener('click', function() {
+        clearAllFilters();
+    });
+    
+    // Add event listeners to all filter inputs
+    setupFilterInputListeners();
+}
+
+function setupFilterInputListeners() {
+    // Add listeners to all filter inputs
+    const inputs = document.querySelectorAll('.filter-input');
+    inputs.forEach(input => {
+        input.addEventListener('input', debounce(applyFilters, 300));
+    });
+    
+    // Add listeners to all filter selects
+    const selects = document.querySelectorAll('.filter-select');
+    selects.forEach(select => {
+        select.addEventListener('change', applyFilters);
+    });
+}
+
+function applyFilters() {
+    const tbody = document.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    // Build active filters object
+    activeFilters = buildActiveFilters();
+    
+    let visibleCount = 0;
+    let filteredData = [];
+    
+    rows.forEach(row => {
+        const asin = row.dataset.asin;
+        
+        // Check if this is the focused ASIN row - if so, always keep it visible
+        const isFocusedRow = row.classList.contains('focused-asin-row');
+        const isVisible = isFocusedRow || passesAllFilters(row);
+        
+        if (isVisible) {
+            row.style.display = '';
+            visibleCount++;
+            
+            // Collect data for totals calculation
+            const rowData = getRowDataForTotals(row, asin);
+            if (rowData) {
+                filteredData.push(rowData);
+            }
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update totals based on filtered data
+    calculateAndDisplayTotals(filteredData);
+    calculateAndDisplayHighRoyaltyTotals(filteredData);
+    
+    console.log(`Filters applied: ${visibleCount} rows visible out of ${rows.length}`);
+}
+
+function buildActiveFilters() {
+    const filters = {};
+    
+    // Price filters
+    const priceMin = parseFloat(document.getElementById('priceMin').value);
+    const priceMax = parseFloat(document.getElementById('priceMax').value);
+    if (!isNaN(priceMin) || !isNaN(priceMax)) {
+        filters.price = { min: priceMin, max: priceMax };
+    }
+    
+    // Reviews filters
+    const reviewsMin = parseInt(document.getElementById('reviewsMin').value);
+    const reviewsMax = parseInt(document.getElementById('reviewsMax').value);
+    if (!isNaN(reviewsMin) || !isNaN(reviewsMax)) {
+        filters.reviews = { min: reviewsMin, max: reviewsMax };
+    }
+    
+    // Rating filters
+    const ratingMin = parseFloat(document.getElementById('ratingMin').value);
+    const ratingMax = parseFloat(document.getElementById('ratingMax').value);
+    if (!isNaN(ratingMin) || !isNaN(ratingMax)) {
+        filters.rating = { min: ratingMin, max: ratingMax };
+    }
+    
+    // Review Images filters
+    const reviewImagesMin = parseInt(document.getElementById('reviewImagesMin').value);
+    const reviewImagesMax = parseInt(document.getElementById('reviewImagesMax').value);
+    if (!isNaN(reviewImagesMin) || !isNaN(reviewImagesMax)) {
+        filters.reviewImages = { min: reviewImagesMin, max: reviewImagesMax };
+    }
+    
+    // BSR filters
+    const bsrMin = parseInt(document.getElementById('bsrMin').value);
+    const bsrMax = parseInt(document.getElementById('bsrMax').value);
+    if (!isNaN(bsrMin) || !isNaN(bsrMax)) {
+        filters.bsr = { min: bsrMin, max: bsrMax };
+    }
+    
+    // Days on Market filters
+    const daysMarketMin = parseInt(document.getElementById('daysMarketMin').value);
+    const daysMarketMax = parseInt(document.getElementById('daysMarketMax').value);
+    if (!isNaN(daysMarketMin) || !isNaN(daysMarketMax)) {
+        filters.daysMarket = { min: daysMarketMin, max: daysMarketMax };
+    }
+    
+    // Length filters
+    const lengthMin = parseInt(document.getElementById('lengthMin').value);
+    const lengthMax = parseInt(document.getElementById('lengthMax').value);
+    if (!isNaN(lengthMin) || !isNaN(lengthMax)) {
+        filters.length = { min: lengthMin, max: lengthMax };
+    }
+    
+    // Royalty/Book filters
+    const royaltyBookMin = parseFloat(document.getElementById('royaltyBookMin').value);
+    const royaltyBookMax = parseFloat(document.getElementById('royaltyBookMax').value);
+    if (!isNaN(royaltyBookMin) || !isNaN(royaltyBookMax)) {
+        filters.royaltyBook = { min: royaltyBookMin, max: royaltyBookMax };
+    }
+    
+    // Royalty/Month filters
+    const royaltyMonthMin = parseFloat(document.getElementById('royaltyMonthMin').value);
+    const royaltyMonthMax = parseFloat(document.getElementById('royaltyMonthMax').value);
+    if (!isNaN(royaltyMonthMin) || !isNaN(royaltyMonthMax)) {
+        filters.royaltyMonth = { min: royaltyMonthMin, max: royaltyMonthMax };
+    }
+    
+    // Boolean filters
+    const largeTrimValue = document.getElementById('largeTrimFilter').value;
+    if (largeTrimValue) {
+        filters.largeTrim = largeTrimValue;
+    }
+    
+    const aModulesValue = document.getElementById('aModulesFilter').value;
+    if (aModulesValue) {
+        filters.aModules = aModulesValue;
+    }
+    
+    const ugcVideosValue = document.getElementById('ugcVideosFilter').value;
+    if (ugcVideosValue) {
+        filters.ugcVideos = ugcVideosValue;
+    }
+    
+    const editorialReviewsValue = document.getElementById('editorialReviewsFilter').value;
+    if (editorialReviewsValue) {
+        filters.editorialReviews = editorialReviewsValue;
+    }
+    
+    return filters;
+}
+
+function passesAllFilters(row) {
+    const asin = row.dataset.asin;
+    
+    // Check numerical filters
+    if (activeFilters.price && !passesNumericalFilter(row, 5, activeFilters.price)) return false;
+    if (activeFilters.reviews && !passesNumericalFilter(row, 6, activeFilters.reviews)) return false;
+    if (activeFilters.rating && !passesNumericalFilter(row, 7, activeFilters.rating)) return false;
+    if (activeFilters.reviewImages && !passesNumericalFilter(row, 8, activeFilters.reviewImages)) return false;
+    if (activeFilters.bsr && !passesNumericalFilter(row, 10, activeFilters.bsr)) return false;
+    if (activeFilters.daysMarket && !passesNumericalFilter(row, 11, activeFilters.daysMarket)) return false;
+    if (activeFilters.length && !passesNumericalFilter(row, 12, activeFilters.length)) return false;
+    if (activeFilters.royaltyBook && !passesNumericalFilter(row, 17, activeFilters.royaltyBook)) return false;
+    if (activeFilters.royaltyMonth && !passesNumericalFilter(row, 18, activeFilters.royaltyMonth)) return false;
+    
+    // Check boolean filters
+    if (activeFilters.largeTrim && !passesBooleanFilter(row, 13, activeFilters.largeTrim)) return false;
+    if (activeFilters.aModules && !passesBooleanFilter(row, 14, activeFilters.aModules)) return false;
+    if (activeFilters.ugcVideos && !passesBooleanFilter(row, 15, activeFilters.ugcVideos)) return false;
+    if (activeFilters.editorialReviews && !passesBooleanFilter(row, 16, activeFilters.editorialReviews)) return false;
+    
+    return true;
+}
+
+function passesNumericalFilter(row, columnIndex, filter) {
+    const cell = row.children[columnIndex];
+    if (!cell) return true;
+    
+    const value = parseFloat(getCellValue(cell, 'number'));
+    if (isNaN(value)) return true; // Don't filter out N/A values
+    
+    if (!isNaN(filter.min) && value < filter.min) return false;
+    if (!isNaN(filter.max) && value > filter.max) return false;
+    
+    return true;
+}
+
+function passesBooleanFilter(row, columnIndex, filterValue) {
+    const cell = row.children[columnIndex];
+    if (!cell) return true;
+    
+    const cellText = cell.textContent.trim();
+    return cellText === filterValue;
+}
+
+function getRowDataForTotals(row, asin) {
+    // Find the corresponding data in allData array
+    const rowData = allData.find(item => item.asin === asin);
+    return rowData || null;
+}
+
+function clearAllFilters() {
+    // Clear all input fields
+    const inputs = document.querySelectorAll('.filter-input');
+    inputs.forEach(input => input.value = '');
+    
+    // Reset all selects
+    const selects = document.querySelectorAll('.filter-select');
+    selects.forEach(select => select.selectedIndex = 0);
+    
+    // Clear active filters
+    activeFilters = {};
+    
+    // Show all rows (except focused row which should remain visible)
+    const tbody = document.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => row.style.display = '');
+    
+    // Recalculate totals with all data
+    calculateAndDisplayTotals(allData);
+    calculateAndDisplayHighRoyaltyTotals(allData);
+    
+    console.log('All filters cleared');
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 

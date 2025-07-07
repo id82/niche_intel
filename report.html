@@ -14,6 +14,13 @@
                 <h1>NicheIntel Pro by <a href="https://adigy.ai" target="_blank" class="adigy-link">Adigy.AI</a> - Ads Automation for Publishers</h1>
             </div>
             <div class="header-right">
+                <div class="filter-toggle-container">
+                    <label for="filterToggle">Filters:</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="filterToggle">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
                 <div class="asin-focus-container">
                     <label for="asinFocusInput">My ASIN:</label>
                     <div class="input-container">
@@ -31,6 +38,77 @@
             <div style="width: 100%; background-color: #f0f0f0; border-radius: 4px; margin-top: 5px;">
                 <div id="progress-bar" style="width: 0%; height: 20px; background-color: #007bff; border-radius: 4px; text-align: center; line-height: 20px; color: white; font-size: 12px; transition: width 0.3s ease;">0%</div>
             </div>
+        </div>
+    </div>
+    <div id="filter-container" class="filter-container" style="display: none;">
+        <div></div> <!-- Skip first 5 columns -->
+        <div>
+            <input type="number" id="priceMin" class="filter-input" placeholder="≥" step="0.01">
+            <input type="number" id="priceMax" class="filter-input" placeholder="≤" step="0.01">
+        </div>
+        <div>
+            <input type="number" id="reviewsMin" class="filter-input" placeholder="≥" step="1">
+            <input type="number" id="reviewsMax" class="filter-input" placeholder="≤" step="1">
+        </div>
+        <div>
+            <input type="number" id="ratingMin" class="filter-input" placeholder="≥" step="0.1" min="0" max="5">
+            <input type="number" id="ratingMax" class="filter-input" placeholder="≤" step="0.1" min="0" max="5">
+        </div>
+        <div>
+            <input type="number" id="reviewImagesMin" class="filter-input" placeholder="≥" step="1">
+            <input type="number" id="reviewImagesMax" class="filter-input" placeholder="≤" step="1">
+        </div>
+        <div></div> <!-- Skip Formats column -->
+        <div>
+            <input type="number" id="bsrMin" class="filter-input" placeholder="≥" step="1">
+            <input type="number" id="bsrMax" class="filter-input" placeholder="≤" step="1">
+        </div>
+        <div>
+            <input type="number" id="daysMarketMin" class="filter-input" placeholder="≥" step="1">
+            <input type="number" id="daysMarketMax" class="filter-input" placeholder="≤" step="1">
+        </div>
+        <div>
+            <input type="number" id="lengthMin" class="filter-input" placeholder="≥" step="1">
+            <input type="number" id="lengthMax" class="filter-input" placeholder="≤" step="1">
+        </div>
+        <div>
+            <select id="largeTrimFilter" class="filter-select">
+                <option value="">All</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+        </div>
+        <div>
+            <select id="aModulesFilter" class="filter-select">
+                <option value="">All</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+        </div>
+        <div>
+            <select id="ugcVideosFilter" class="filter-select">
+                <option value="">All</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+        </div>
+        <div>
+            <select id="editorialReviewsFilter" class="filter-select">
+                <option value="">All</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+        </div>
+        <div>
+            <input type="number" id="royaltyBookMin" class="filter-input" placeholder="≥" step="0.01">
+            <input type="number" id="royaltyBookMax" class="filter-input" placeholder="≤" step="0.01">
+        </div>
+        <div>
+            <input type="number" id="royaltyMonthMin" class="filter-input" placeholder="≥" step="0.01">
+            <input type="number" id="royaltyMonthMax" class="filter-input" placeholder="≤" step="0.01">
+        </div>
+        <div>
+            <button id="clearFilters" class="filter-button">Clear All</button>
         </div>
     </div>
     <div id="table-container">
