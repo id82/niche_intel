@@ -1054,6 +1054,9 @@ document.addEventListener('DOMContentLoaded', () => {
             copyAsinsToClipboard();
         });
     }
+    
+    // ASIN Focus functionality
+    setupAsinFocus();
 });
 
 function copyAsinsToClipboard() {
@@ -1356,4 +1359,131 @@ window.addEventListener('resize', () => {
         });
     }, 250); // Wait 250ms after resize stops
 });
+
+// ASIN Focus Functionality
+let focusedAsinRow = null;
+let originalRowPosition = null;
+
+function setupAsinFocus() {
+    const asinInput = document.getElementById('asinFocusInput');
+    const clearIcon = document.getElementById('clearAsinInput');
+    const notFoundMessage = document.getElementById('asinNotFound');
+    
+    if (!asinInput || !clearIcon || !notFoundMessage) return;
+    
+    // Input event listener
+    asinInput.addEventListener('input', function() {
+        const value = this.value.trim().toUpperCase();
+        
+        // Show/hide clear icon
+        clearIcon.style.display = value ? 'block' : 'none';
+        
+        // Hide not found message when typing
+        notFoundMessage.style.display = 'none';
+        
+        // Only process when exactly 10 characters
+        if (value.length === 10) {
+            focusOnAsin(value);
+        } else if (value.length < 10) {
+            // Clear focus if less than 10 characters
+            clearAsinFocus();
+        }
+    });
+    
+    // Clear icon click handler
+    clearIcon.addEventListener('click', function() {
+        asinInput.value = '';
+        clearIcon.style.display = 'none';
+        notFoundMessage.style.display = 'none';
+        clearAsinFocus();
+    });
+}
+
+function focusOnAsin(asin) {
+    const notFoundMessage = document.getElementById('asinNotFound');
+    
+    // Find the row with this ASIN
+    const asinLinks = document.querySelectorAll('.asin-cell a');
+    let targetRow = null;
+    
+    for (const link of asinLinks) {
+        if (link.textContent.trim() === asin) {
+            targetRow = link.closest('tr');
+            break;
+        }
+    }
+    
+    if (!targetRow) {
+        // ASIN not found
+        notFoundMessage.style.display = 'block';
+        clearAsinFocus();
+        return;
+    }
+    
+    // Hide not found message
+    notFoundMessage.style.display = 'none';
+    
+    // Clear any existing focus
+    clearAsinFocus();
+    
+    // Store original position
+    const tbody = targetRow.parentNode;
+    const allRows = Array.from(tbody.children);
+    originalRowPosition = {
+        row: targetRow,
+        index: allRows.indexOf(targetRow),
+        nextSibling: targetRow.nextSibling
+    };
+    
+    // Add focused styling and move to top
+    targetRow.classList.add('focused-asin-row');
+    tbody.insertBefore(targetRow, tbody.firstChild);
+    focusedAsinRow = targetRow;
+    
+    console.log(`ASIN ${asin} focused and moved to top`);
+}
+
+function clearAsinFocus() {
+    if (!focusedAsinRow || !originalRowPosition) return;
+    
+    // Remove focused styling
+    focusedAsinRow.classList.remove('focused-asin-row');
+    
+    // Return to original position
+    const tbody = focusedAsinRow.parentNode;
+    if (originalRowPosition.nextSibling) {
+        tbody.insertBefore(focusedAsinRow, originalRowPosition.nextSibling);
+    } else {
+        tbody.appendChild(focusedAsinRow);
+    }
+    
+    // Reset variables
+    focusedAsinRow = null;
+    originalRowPosition = null;
+    
+    console.log('ASIN focus cleared');
+}
+
+// Override sorting to exclude focused row
+const originalSortTable = sortTable;
+sortTable = function(columnIndex, dataType, direction) {
+    let focusedRowData = null;
+    
+    // Temporarily remove focused row from sorting
+    if (focusedAsinRow) {
+        focusedRowData = {
+            row: focusedAsinRow,
+            parent: focusedAsinRow.parentNode
+        };
+        focusedAsinRow.remove();
+    }
+    
+    // Perform original sort
+    originalSortTable(columnIndex, dataType, direction);
+    
+    // Re-add focused row at top
+    if (focusedRowData) {
+        focusedRowData.parent.insertBefore(focusedRowData.row, focusedRowData.parent.firstChild);
+    }
+};
 

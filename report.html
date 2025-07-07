@@ -14,6 +14,14 @@
                 <h1>NicheIntel Pro by <a href="https://adigy.ai" target="_blank" class="adigy-link">Adigy.AI</a> - Ads Automation for Publishers</h1>
             </div>
             <div class="header-right">
+                <div class="asin-focus-container">
+                    <label for="asinFocusInput">My ASIN:</label>
+                    <div class="input-container">
+                        <input type="text" id="asinFocusInput" maxlength="10" placeholder="Enter ASIN">
+                        <span id="clearAsinInput" class="clear-icon" style="display: none;">&times;</span>
+                    </div>
+                    <span id="asinNotFound" class="asin-message" style="display: none;">ASIN not found</span>
+                </div>
                 <button id="copyAsins" class="header-button">Copy ASINs</button>
                 <button id="exportData" class="header-button">Export CSV</button>
             </div>

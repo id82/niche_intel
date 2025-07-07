@@ -78,6 +78,84 @@ body {
     transform: translateY(-1px);
 }
 
+/* ASIN Focus Input Styling */
+.asin-focus-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 15px;
+    position: relative;
+}
+
+.asin-focus-container label {
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+}
+
+.input-container {
+    position: relative;
+    display: inline-block;
+}
+
+#asinFocusInput {
+    padding: 8px 25px 8px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 100px;
+    text-transform: uppercase;
+    transition: border-color 0.2s;
+}
+
+#asinFocusInput:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.clear-icon {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 16px;
+    line-height: 1;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.clear-icon:hover {
+    color: #dc3545;
+}
+
+.asin-message {
+    font-size: 12px;
+    color: #ffc107;
+    font-style: italic;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+/* Focused ASIN Row Styling */
+.focused-asin-row {
+    background-color: #fff3cd !important;
+    border: 2px solid #ffc107 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 5 !important;
+}
+
+.focused-asin-row:hover {
+    background-color: #fff3cd !important;
+}
+
 
 .header h1 {
     margin: 0;
