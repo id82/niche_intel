@@ -1061,9 +1061,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Filter functionality
     setupFilterFunctionality();
-    
-    // Scroll synchronization
-    setupScrollSynchronization();
 });
 
 function copyAsinsToClipboard() {
@@ -1506,6 +1503,10 @@ function setupFilterFunctionality() {
     filterToggle.addEventListener('change', function() {
         if (this.checked) {
             filterContainer.style.display = 'flex';
+            // Set up scroll synchronization after filter container is visible
+            setTimeout(() => {
+                setupScrollSynchronization();
+            }, 100);
         } else {
             filterContainer.style.display = 'none';
             // Clear all filters when toggle is turned off
@@ -1759,9 +1760,21 @@ function debounce(func, wait) {
 }
 
 // Scroll synchronization between filter container and table
+let scrollSyncInitialized = false;
+
 function setupScrollSynchronization() {
+    // Prevent multiple initializations
+    if (scrollSyncInitialized) return;
+    
     const filterContainer = document.getElementById('filter-container');
     const tableContainer = document.getElementById('table-container');
+    
+    if (!filterContainer || !tableContainer) {
+        console.warn('Cannot set up scroll sync: containers not found');
+        return;
+    }
+    
+    console.log('Setting up scroll synchronization');
     
     let isFilterScrolling = false;
     let isTableScrolling = false;
@@ -1771,7 +1784,8 @@ function setupScrollSynchronization() {
         if (!isTableScrolling) {
             isFilterScrolling = true;
             tableContainer.scrollLeft = this.scrollLeft;
-            setTimeout(() => { isFilterScrolling = false; }, 10);
+            console.log('Filter scrolled to:', this.scrollLeft);
+            setTimeout(() => { isFilterScrolling = false; }, 50);
         }
     });
     
@@ -1780,8 +1794,12 @@ function setupScrollSynchronization() {
         if (!isFilterScrolling) {
             isTableScrolling = true;
             filterContainer.scrollLeft = this.scrollLeft;
-            setTimeout(() => { isTableScrolling = false; }, 10);
+            console.log('Table scrolled to:', this.scrollLeft);
+            setTimeout(() => { isTableScrolling = false; }, 50);
         }
     });
+    
+    scrollSyncInitialized = true;
+    console.log('Scroll synchronization initialized');
 }
 
