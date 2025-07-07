@@ -190,7 +190,7 @@ th:nth-child(4), td:nth-child(4) { /* Cover */
 
 th:nth-child(5), td:nth-child(5) { /* Title & Author */
     flex: 2;
-    min-width: 200px;
+    min-width: 300px;
     max-width: 300px;
 }
 
@@ -213,15 +213,15 @@ th:nth-child(8), td:nth-child(8) { /* Avg Rating */
 }
 
 th:nth-child(9), td:nth-child(9) { /* Review Images */
-    flex: 0 0 97px;
-    min-width: 97px;
-    max-width: 97px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 th:nth-child(10), td:nth-child(10) { /* Formats */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 th:nth-child(11), td:nth-child(11) { /* BSR */
@@ -237,27 +237,27 @@ th:nth-child(12), td:nth-child(12) { /* Days on Market */
 }
 
 th:nth-child(13), td:nth-child(13) { /* Length */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 th:nth-child(14), td:nth-child(14) { /* Large Trim */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 th:nth-child(15), td:nth-child(15) { /* A+ Modules */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 th:nth-child(16), td:nth-child(16) { /* UGC Videos */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 th:nth-child(17), td:nth-child(17) { /* Editorial Reviews */
@@ -485,9 +485,9 @@ tfoot td {
 #totals-row td:first-child {
     justify-content: flex-start;
     text-align: left;
-    flex: 0 0 calc(20px + 80px + 80px + 60px + 200px);
-    min-width: calc(20px + 80px + 80px + 60px + 200px);
-    max-width: calc(20px + 80px + 80px + 60px + 200px);
+    flex: 0 0 588px;
+    min-width: 588px;
+    max-width: 588px;
 }
 
 /* Align totals row data cells with regular table columns */
@@ -510,15 +510,15 @@ tfoot td {
 }
 
 #totals-row td:nth-child(5) { /* Review Images */
-    flex: 0 0 97px;
-    min-width: 97px;
-    max-width: 97px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #totals-row td:nth-child(6) { /* Formats */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #totals-row td:nth-child(7) { /* BSR */
@@ -534,27 +534,27 @@ tfoot td {
 }
 
 #totals-row td:nth-child(9) { /* Length */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #totals-row td:nth-child(10) { /* Large Trim */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #totals-row td:nth-child(11) { /* A+ Modules */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #totals-row td:nth-child(12) { /* UGC Videos */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #totals-row td:nth-child(13) { /* Editorial Reviews */
@@ -599,9 +599,9 @@ tfoot td {
 #high-royalty-totals-row td:first-child {
     justify-content: flex-start;
     text-align: left;
-    flex: 0 0 calc(20px + 80px + 80px + 60px + 200px);
-    min-width: calc(20px + 80px + 80px + 60px + 200px);
-    max-width: calc(20px + 80px + 80px + 60px + 200px);
+    flex: 0 0 588px;
+    min-width: 588px;
+    max-width: 588px;
 }
 
 /* Align high royalty totals row data cells with regular table columns */
@@ -624,15 +624,15 @@ tfoot td {
 }
 
 #high-royalty-totals-row td:nth-child(5) { /* Review Images */
-    flex: 0 0 97px;
-    min-width: 97px;
-    max-width: 97px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #high-royalty-totals-row td:nth-child(6) { /* Formats */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #high-royalty-totals-row td:nth-child(7) { /* BSR */
@@ -648,27 +648,27 @@ tfoot td {
 }
 
 #high-royalty-totals-row td:nth-child(9) { /* Length */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #high-royalty-totals-row td:nth-child(10) { /* Large Trim */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #high-royalty-totals-row td:nth-child(11) { /* A+ Modules */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #high-royalty-totals-row td:nth-child(12) { /* UGC Videos */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 #high-royalty-totals-row td:nth-child(13) { /* Editorial Reviews */
