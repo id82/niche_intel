@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `Analysis Stopped! ${processedCount} of ${totalToProcess} products were processed.` :
                 `Analysis Complete! All ${totalToProcess} products have been processed.`;
             progressText.textContent = message;
-            document.getElementById('progress-container').style.backgroundColor = request.stopped ? '#f8d7da' : '#a7d4a7'; // Red if stopped, darker green if complete
+            // Keep original background color - no color change needed
             
             // Collapse progress container after 3 seconds
             setTimeout(() => {
