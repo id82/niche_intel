@@ -634,8 +634,8 @@ function calculateAndDisplayTotals(allData) {
         bsrCount: 0,
         daysSum: 0,
         daysCount: 0,
-        lengthSum: 0,                   // <-- FIXED: Initialize properties to prevent TypeError
-        lengthCount: 0,                 // <-- FIXED: Initialize properties to prevent TypeError
+        lengthSum: 0,
+        lengthCount: 0,
         aplusSum: 0,
         aplusCount: 0,
         ugcVideos: 0,
@@ -783,8 +783,8 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         bsrCount: 0,
         daysSum: 0,
         daysCount: 0,
-        lengthSum: 0,                   // <-- FIXED: Initialize properties to prevent TypeError
-        lengthCount: 0,                 // <-- FIXED: Initialize properties to prevent TypeError
+        lengthSum: 0,
+        lengthCount: 0,
         aplusSum: 0,
         aplusCount: 0,
         ugcVideos: 0,

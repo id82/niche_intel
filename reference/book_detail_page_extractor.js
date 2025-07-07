@@ -355,7 +355,7 @@ function runFullProductPageExtraction() {
             if (!text) return null;
             const match = text.match(/(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
             if (!match) return null;
-    
+
             let priceStr = match[0];
             if (priceStr.includes(',') && priceStr.includes('.')) {
                 if (priceStr.lastIndexOf(',') > priceStr.lastIndexOf('.')) {
@@ -398,7 +398,7 @@ function runFullProductPageExtraction() {
                 const audioPriceEl = swatch.querySelector('.audible_mm_price');
                 if (audioPriceEl) {
                     const audioPrice = cleanPrice(audioPriceEl.textContent);
-                    if (audioPrice !== null) prices.push({ price: audioPrice, type: 'list_price' });
+                    if (audioPrice !== null) prices.push({ price: audioPrice, type: 'price' }); // Use generic 'price' type initially
                 }
             }
 
@@ -408,7 +408,7 @@ function runFullProductPageExtraction() {
                 if (mainPrice !== null && !prices.some(p => p.price === mainPrice)) {
                     prices.push({
                         price: mainPrice,
-                        type: isKU && formatType === 'KINDLE' ? 'ku_price' : 'list_price'
+                        type: isKU && formatType === 'KINDLE' ? 'ku_price' : 'price' // Use generic 'price' for non-KU
                     });
                 }
             }
@@ -420,10 +420,31 @@ function runFullProductPageExtraction() {
                     let listPrice = priceElement ? cleanPrice(priceElement.textContent) : cleanPrice(extraMessage.textContent);
                     
                     if (listPrice !== null && !prices.some(p => p.price === listPrice)) {
-                        prices.push({ price: listPrice, type: 'list_price' });
+                        prices.push({ price: listPrice, type: 'price' }); // Use generic 'price'
                     }
                 }
             }
+
+            // --- START: NEW LOGIC TO IDENTIFY LIST PRICE ---
+            // Finalize price types after collecting all prices for this format
+            const nonKuPrices = prices.filter(p => p.type !== 'ku_price');
+            if (nonKuPrices.length > 0) {
+                // The highest non-KU price is the list price
+                const maxPrice = Math.max(...nonKuPrices.map(p => p.price));
+                let listPriceSet = false;
+
+                for (const price of prices) {
+                    if (price.type !== 'ku_price') {
+                        if (price.price === maxPrice && !listPriceSet) {
+                            price.type = 'list_price'; // This is the one we'll use for calculation
+                            listPriceSet = true;
+                        } else {
+                            price.type = 'other_price'; // This is likely a sale price
+                        }
+                    }
+                }
+            }
+            // --- END: NEW LOGIC TO IDENTIFY LIST PRICE ---
             
             if (asin && formatName) {
                 results.push({
@@ -512,7 +533,11 @@ function runFullProductPageExtraction() {
     function calculateRoyaltyAndSales(format, productDetails, marketplaceInfo) {
         const book_type = format.formatName.toLowerCase();
         if (!format.prices || format.prices.length === 0) return { error: "No price found for this format." };
-        const list_price = Math.min(...format.prices.map(p => p.price));
+        // Find the list price we identified in the previous step.
+        const listPriceObject = format.prices.find(p => p.type === 'list_price');
+
+        // If not found, fall back to the highest available price as a safety measure.
+        const list_price = listPriceObject ? listPriceObject.price : Math.max(...format.prices.filter(p => p.type !== 'ku_price').map(p => p.price));
         
         const page_count = productDetails.print_length;
         const bsr = productDetails.bsr;

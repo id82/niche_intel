@@ -937,7 +937,11 @@ function runFullProductPageExtraction() {
             return { error: "No price found for this format." };
         }
         
-        const list_price = Math.max(...format.prices.map(p => p.price));
+        // Find the list price we identified in the previous step.
+        const listPriceObject = format.prices.find(p => p.type === 'list_price');
+
+        // If not found, fall back to the highest available price as a safety measure.
+        const list_price = listPriceObject ? listPriceObject.price : Math.max(...format.prices.filter(p => p.type !== 'ku_price').map(p => p.price));
         console.log(`scrapers.js: Using list price: ${list_price}`);
         
         const page_count = productDetails.print_length;
@@ -1387,7 +1391,11 @@ function parseProductPageFromHTML(htmlString, url) {
             return { error: "No price found for this format." };
         }
         
-        const list_price = Math.max(...format.prices.map(p => p.price));
+        // Find the list price we identified in the previous step.
+        const listPriceObject = format.prices.find(p => p.type === 'list_price');
+
+        // If not found, fall back to the highest available price as a safety measure.
+        const list_price = listPriceObject ? listPriceObject.price : Math.max(...format.prices.filter(p => p.type !== 'ku_price').map(p => p.price));
         const page_count = productDetails.print_length;
         const bsr = productDetails.bsr;
         if (!list_price || !page_count || !bsr) {
