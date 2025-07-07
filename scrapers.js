@@ -600,35 +600,47 @@ function runFullProductPageExtraction() {
 
 
     function extractAuthorInfo() {
+        console.log("scrapers.js: Starting extractAuthorInfo extraction");
+        
         // This selector for byline authors is stable and does not need changes.
         const bylineAuthors = [...document.querySelectorAll('#bylineInfo .author a.a-link-normal')]
             .map(a => cleanText(a.textContent))
             .filter(Boolean);
+        console.log("scrapers.js: Byline authors found:", bylineAuthors);
 
         // Use a more robust selector for the main author card container.
         // It combines a stable part of the ID with a stable part of the class name.
         const authorCard = document.querySelector('div[id^="CardInstance"][class*="_about-the-author-card_style_cardParentDiv"]');
+        console.log("scrapers.js: Author card found:", !!authorCard);
         
         let biography = null, imageUrl = null, cardAuthorName = null;
 
         if (authorCard) {
             // Extract biography using a selector that ignores the unique hash.
             biography = getText(authorCard, 'div[class*="_peekableContent"]');
+            console.log("scrapers.js: Biography extracted:", biography ? "Found" : "Not found");
             if (biography?.includes("Discover more of the author's books")) {
                 biography = null;
+                console.log("scrapers.js: Biography cleared (generic message detected)");
             }
             
             // Extract image URL using a stable class selector.
             imageUrl = getAttr(authorCard, 'img[class*="_authorImage"]', 'src');
+            console.log("scrapers.js: Image URL extracted:", imageUrl ? "Found" : "Not found");
 
             // Extract the author's name using a more specific and stable selector, avoiding generic tags like 'h2'.
             cardAuthorName = getText(authorCard, 'div[class*="_authorName"] a');
+            console.log("scrapers.js: Card author name extracted:", cardAuthorName);
         }
         
         // Prioritize byline authors if they exist, otherwise use the name from the card.
         const authorName = bylineAuthors.length > 0 ? bylineAuthors.join(', ') : cardAuthorName;
+        console.log("scrapers.js: Final author name:", authorName);
         
-        if (!authorName) return null;
+        if (!authorName) {
+            console.warn("scrapers.js: No author name found, returning null");
+            return null;
+        }
         
         // Check if the image is the default placeholder.
         const validImage = imageUrl && imageUrl !== "https://m.media-amazon.com/images/I/01Kv-W2ysOL._SY600_.png";
@@ -636,13 +648,15 @@ function runFullProductPageExtraction() {
         // Count words in the biography.
         const bioWordCount = biography ? biography.trim().split(/\s+/).length : 0;
         
-        return { 
+        const result = { 
             name: authorName, 
             biography, 
             imageUrl, 
             validImage, 
             bioWordCount 
         };
+        console.log("scrapers.js: Final author info result:", result);
+        return result;
     }
     
     function extractCustomerReviews() {
