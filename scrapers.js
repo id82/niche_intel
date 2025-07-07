@@ -969,19 +969,23 @@ function runFullProductPageExtraction() {
         // Simplified royalty calculation (mirrors mini table logic)
         let royaltyPerUnit = 0;
         const book_type = format.formatName.toLowerCase();
+        console.log(`scrapers.js: Simplified calculation for book type: "${book_type}" with price: $${price}`);
         
         if (book_type.includes('kindle') || book_type.includes('ebook')) {
             // Simplified Kindle royalty calculation
             if (price >= 2.99 && price <= 9.99) {
                 royaltyPerUnit = price * 0.7; // 70% royalty
+                console.log(`scrapers.js: Kindle 70% royalty applied: $${royaltyPerUnit.toFixed(2)}`);
             } else {
                 royaltyPerUnit = price * 0.35; // 35% royalty
+                console.log(`scrapers.js: Kindle 35% royalty applied: $${royaltyPerUnit.toFixed(2)}`);
             }
         } else {
             // Simplified paperback royalty calculation
             const printingCost = 0.85 + (pageCount * 0.012); // Simplified printing cost
             const royaltyRate = price < 10 ? 0.5 : 0.6; // Simplified royalty rate
             royaltyPerUnit = Math.max(0, (price * royaltyRate) - printingCost);
+            console.log(`scrapers.js: Paperback royalty: $${price} * ${royaltyRate} - $${printingCost.toFixed(2)} = $${royaltyPerUnit.toFixed(2)}`);
         }
         
         const monthly_royalty = Math.round(royaltyPerUnit * monthly_sales);
@@ -1149,16 +1153,21 @@ function runFullProductPageExtraction() {
         console.log(`📊 Current format is "${currentFormat.formatName}". Running profitability calculation...`);
         const marketplaceInfo = getMarketplaceInfo();
         
-        // Only calculate for physical books
+        // Calculate for supported book formats
         const formatNameLower = currentFormat.formatName.toLowerCase();
-        if (formatNameLower === 'paperback' || formatNameLower === 'hardcover') {
+        console.log(`scrapers.js: Format name (lowercase): "${formatNameLower}"`);
+        
+        if (formatNameLower.includes('paperback') || formatNameLower.includes('hardcover') || 
+            formatNameLower.includes('kindle') || formatNameLower.includes('ebook')) {
+            console.log(`scrapers.js: Calculating royalties for ${formatNameLower} format`);
             fullProductData.royalties = calculateRoyaltyAndSales(
                 currentFormat,
                 fullProductData.product_details,
                 marketplaceInfo
             );
+            console.log(`scrapers.js: Royalty calculation result:`, fullProductData.royalties);
         } else {
-             console.log(`-- Profitability calculation skipped for non-physical format: "${currentFormat.formatName}".`);
+             console.log(`scrapers.js: Profitability calculation skipped for non-supported format: "${currentFormat.formatName}"`);
         }
     } else {
         console.warn("Could not determine the currently selected format on the page.");
@@ -1662,15 +1671,29 @@ function parseProductPageFromHTML(htmlString, url) {
     // --- INTEGRATE ROYALTY CALCULATION ---
     const marketplaceInfo = _getMarketplaceInfoFromURL(url);
     const currentFormat = fullProductData.formats.find(f => f.isSelected);
+    console.log(`Offscreen: Current format detected:`, currentFormat?.formatName, `- Selected:`, currentFormat?.isSelected);
+    console.log(`Offscreen: All formats available:`, fullProductData.formats.map(f => ({name: f.formatName, selected: f.isSelected})));
+    
     if (currentFormat) {
         const formatNameLower = currentFormat.formatName.toLowerCase();
-        if (formatNameLower === 'paperback' || formatNameLower === 'hardcover') {
+        console.log(`Offscreen: Format name (lowercase): "${formatNameLower}"`);
+        
+        // Expand format checking to include more book types
+        if (formatNameLower.includes('paperback') || formatNameLower.includes('hardcover') || 
+            formatNameLower.includes('kindle') || formatNameLower.includes('ebook')) {
+            console.log(`Offscreen: Calculating royalties for ${formatNameLower} format`);
             fullProductData.royalties = _calculateRoyaltyAndSales(
                 currentFormat,
                 fullProductData.product_details,
                 marketplaceInfo
             );
+            console.log(`Offscreen: Royalty calculation result:`, fullProductData.royalties);
+        } else {
+            console.log(`Offscreen: Profitability calculation skipped for non-supported format: "${currentFormat.formatName}"`);
         }
+    } else {
+        console.warn("Offscreen: Could not determine the currently selected format on the page.");
+        console.log("Offscreen: Available formats:", fullProductData.formats);
     }
 
     console.log(`Offscreen: Successfully parsed ${url}`);
