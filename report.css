@@ -119,7 +119,7 @@ table {
 
 th, td {
     border: none;
-    padding: 16px 12px;
+    padding: 12px 8px;
     text-align: center;
     vertical-align: middle;
     transition: all 0.2s ease;
@@ -345,7 +345,7 @@ tbody tr {
 tbody td {
     flex: 1;
     min-width: 0;
-    padding: 16px 12px;
+    padding: 12px 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -364,7 +364,7 @@ tfoot tr {
 }
 
 tfoot td {
-    padding: 8px 12px !important;
+    padding: 12px 8px !important;
     white-space: nowrap;
     font-size: 12px;
     line-height: 1.2;
