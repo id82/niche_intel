@@ -538,6 +538,7 @@ function updateTableRow(asin, data) {
     const editorialReviews = get(['editorial_reviews'], data);
     const royaltyUnit = get(['royalties', 'royalty_per_unit'], data);
     const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
+    const authors = get(['authors'], data);
     
     // Update title with badge if badge status changed
     if (badgeStatus) {
@@ -567,6 +568,7 @@ function updateTableRow(asin, data) {
     updateCell(`trim-${asin}`, largeTrim, val => val ? 'Yes' : 'No');
     updateCell(`aplus-${asin}`, aplusCount, val => val || 0);
     updateCell(`ugc-videos-${asin}`, ugcVideoCount, val => val || 0);
+    updateCell(`author-${asin}`, authors, val => val && val.length > 0 ? val.join(', ') : 'N/A');
     // Handle editorial reviews specially to ensure "No" instead of "N/A"
     const editorialReviewsCell = document.getElementById(`editorial-reviews-${asin}`);
     if (editorialReviewsCell) {
