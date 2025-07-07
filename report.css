@@ -6,7 +6,7 @@ body {
 }
 
 .header, .footer {
-    background-color: #64748b;
+    background-color: #1e293b;
     color: white;
     padding: 20px;
     position: relative;
@@ -109,7 +109,7 @@ th, td {
 }
 
 th {
-    background-color: #64748b;
+    background-color: #1e293b;
     color: white;
     font-weight: 600;
     text-align: center;
@@ -173,11 +173,11 @@ td:nth-child(4) {
 }
 
 tbody tr:nth-child(even) {
-    background-color: #fafbfc;
+    background-color: #f8fafc;
 }
 
 tbody tr:hover {
-    background-color: #f1f5f9;
+    background-color: #e2e8f0;
     transform: scale(1.001);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
@@ -245,7 +245,7 @@ th:nth-child(n+6), td:nth-child(n+6) {
 
 /* Right align all numeric cells in totals row */
 #totals-row {
-    background-color: #93c5fd !important;
+    background-color: #3b82f6 !important;
     color: white;
     font-weight: 600;
 }
@@ -263,10 +263,10 @@ th:nth-child(n+6), td:nth-child(n+6) {
 
 /* Styling for high royalty totals row */
 #high-royalty-totals-row {
-    background-color: #6ee7b7 !important;
+    background-color: #10b981 !important;
     color: white;
     font-weight: 600;
-    border-top: 2px solid #34d399;
+    border-top: 2px solid #059669;
 }
 
 /* Right align all numeric cells in high royalty totals row */
@@ -355,7 +355,7 @@ th.sortable {
 }
 
 th.sortable:hover {
-    background-color: #475569;
+    background-color: #0f172a;
 }
 
 th.sortable::after {
@@ -410,7 +410,7 @@ th.sortable.sort-desc::after {
 
 /* Footer modernization */
 .footer {
-    background-color: #64748b;
+    background-color: #1e293b;
     text-align: center;
     margin-top: 40px;
 }
