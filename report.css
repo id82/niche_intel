@@ -121,7 +121,7 @@ th, td {
     border: none;
     border-bottom: 1px solid #e8ecf0;
     padding: 16px 12px;
-    text-align: left;
+    text-align: center;
     vertical-align: middle;
     transition: all 0.2s ease;
 }
@@ -157,6 +157,7 @@ th {
 /* Keep Title & Author header left aligned */
 th:nth-child(4) {
     justify-content: flex-start;
+    text-align: left;
 }
 
 /* ASIN styling with monospace font */
@@ -198,17 +199,13 @@ th:nth-child(4) {
     flex: 2 !important;
     min-width: 200px;
     max-width: 300px;
-}
-
-/* All other table cells center aligned except totals labels */
-td {
-    text-align: center;
-    vertical-align: middle;
+    justify-content: flex-start !important;
 }
 
 /* Keep title & author content left aligned */
 td:nth-child(4) {
     text-align: left;
+    justify-content: flex-start;
 }
 
 tbody tr:nth-child(even) {
@@ -301,6 +298,9 @@ tbody td {
     flex: 1;
     min-width: 0;
     padding: 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Sticky footer for totals */
@@ -342,6 +342,7 @@ tfoot td {
 /* Keep the first column (label) left aligned in totals row */
 #totals-row td:first-child {
     justify-content: flex-start;
+    text-align: left;
 }
 
 /* Styling for high royalty totals row */
@@ -361,6 +362,7 @@ tfoot td {
 /* Keep the first column (label) left aligned in high royalty totals row */
 #high-royalty-totals-row td:first-child {
     justify-content: flex-start;
+    text-align: left;
 }
 
 /* Ensure header buttons are visible */
