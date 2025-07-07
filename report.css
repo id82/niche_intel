@@ -153,8 +153,45 @@ th {
     justify-content: center;
 }
 
+/* Specific column widths for proper alignment */
+th:nth-child(1), td:nth-child(1) { /* Select */
+    flex: 0 0 40px;
+    min-width: 40px;
+    max-width: 40px;
+}
+
+th:nth-child(2), td:nth-child(2) { /* Type */
+    flex: 0 0 120px;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+th:nth-child(3), td:nth-child(3) { /* ASIN */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+th:nth-child(4), td:nth-child(4) { /* Cover */
+    flex: 0 0 60px;
+    min-width: 60px;
+    max-width: 60px;
+}
+
+th:nth-child(5), td:nth-child(5) { /* Title & Author */
+    flex: 2;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+th:nth-child(6), td:nth-child(6) { /* Price */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
 /* Keep Title & Author header left aligned */
-th:nth-child(4) {
+th:nth-child(5) {
     justify-content: flex-start;
     text-align: left;
 }
@@ -195,9 +232,6 @@ th:nth-child(4) {
 /* Title and Author cell content should be left aligned */
 .title-author-cell {
     text-align: left;
-    flex: 2 !important;
-    min-width: 200px;
-    max-width: 300px;
     justify-content: flex-start !important;
     flex-direction: column;
     align-items: flex-start;
@@ -206,14 +240,20 @@ th:nth-child(4) {
 /* Type column should wrap bubbles when needed */
 td:nth-child(2) {
     flex-wrap: wrap;
-    max-width: 120px;
     gap: 2px;
 }
 
 /* Keep title & author content left aligned */
-td:nth-child(4) {
+td:nth-child(5) {
     text-align: left;
     justify-content: flex-start;
+}
+
+/* Price column should stack prices vertically */
+td:nth-child(6) {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
 }
 
 tbody tr:nth-child(even) {
@@ -286,7 +326,7 @@ tbody tr:hover {
 }
 
 /* Center align columns from Reviews onwards */
-th:nth-child(n+6), td:nth-child(n+6) {
+th:nth-child(n+7), td:nth-child(n+7) {
     text-align: center;
 }
 

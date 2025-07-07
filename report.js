@@ -193,7 +193,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
         <table>
             <thead>
                 <tr>
-                    <th><input type="checkbox" id="select-all-checkbox"> Select</th>
+                    <th><input type="checkbox" id="select-all-checkbox"></th>
                     <th class="sortable" data-column="1" data-type="text">Type</th>
                     <th class="sortable" data-column="2" data-type="text">ASIN</th>
                     <th>Cover</th>
