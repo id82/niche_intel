@@ -203,6 +203,13 @@ th:nth-child(4) {
     align-items: flex-start;
 }
 
+/* Type column should wrap bubbles when needed */
+td:nth-child(2) {
+    flex-wrap: wrap;
+    max-width: 120px;
+    gap: 2px;
+}
+
 /* Keep title & author content left aligned */
 td:nth-child(4) {
     text-align: left;
