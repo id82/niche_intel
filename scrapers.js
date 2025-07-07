@@ -1250,78 +1250,82 @@ function parseProductPageFromHTML(htmlString, url) {
     // --- Adapted Format Extraction Logic ---
     function _extractAmazonBookFormats(doc, currentUrl) {
         const formats = [];
-        const swatches = doc.querySelectorAll('[id^="tmm-grid-swatch-"]');
-        const currentAsin = currentUrl.match(/\/dp\/([A-Z0-9]{10})/)?.[1];
+        const pageAsin = currentUrl.match(/\/dp\/([A-Z0-9]{10})/)?.[1];
+        if (!pageAsin) return [];
 
-        swatches.forEach(swatch => {
+        doc.querySelectorAll('[id^="tmm-grid-swatch-"]').forEach(swatch => {
             const formatSpan = swatch.querySelector('span[aria-label*="Format:"]');
             if (!formatSpan) return;
 
-            const formatName = formatSpan.getAttribute('aria-label')?.replace('Format: ', '').trim();
+            let formatName = formatSpan.getAttribute('aria-label')?.replace('Format: ', '').trim();
+            if (swatch.querySelector('.audible_mm_title')) {
+                formatName = 'Audiobook';
+            }
             if (!formatName) return;
 
-            // Extract ASIN
-            let asin = null;
+            const isSelected = swatch.classList.contains('selected');
             const link = swatch.querySelector('a[href*="/dp/"]');
-            if (link) {
-                const asinMatch = link.getAttribute('href')?.match(/\/dp\/([A-Z0-9]{10})/);
-                asin = asinMatch ? asinMatch[1] : null;
-            } else {
-                asin = currentAsin; // This is the selected format
-            }
+            const asin = isSelected ? pageAsin : link?.getAttribute('href')?.match(/\/dp\/([A-Z0-9]{10})/)?.[1];
 
-            // Extract all possible prices like the original function
+            if (!asin) return;
+
+            // --- New, more robust price extraction ---
             const prices = [];
-            const priceElement = swatch.querySelector('.slot-price span[aria-label]');
-            const priceText = priceElement?.getAttribute('aria-label') || priceElement?.textContent || '';
-            
-            let isKindleUnlimited = false;
-            if (priceText.includes('$0.00') && priceText.toLowerCase().includes('kindle unlimited')) {
-                isKindleUnlimited = true;
-                prices.push({ price: 0, type: 'ku_price' });
-            } else {
-                const currentPrice = cleanPrice(priceText);
-                if (currentPrice !== null) {
-                    prices.push({ price: currentPrice, type: 'current_price' });
+            const isKU = !!swatch.querySelector('i.a-icon-kindle-unlimited');
+
+            // Extract main price from the slot
+            const slotPriceEl = swatch.querySelector('.slot-price span[aria-label]');
+            if (slotPriceEl) {
+                const mainPrice = cleanPrice(slotPriceEl.getAttribute('aria-label'));
+                if (mainPrice !== null) {
+                    prices.push({ price: mainPrice, type: isKU ? 'ku_price' : 'price' });
                 }
             }
 
-            // Look for strikethrough price (list price) - only for selected format
-            const isSelected = !link || currentUrl.includes(asin);
+            // Extract extra Kindle price message
+            const extraMessage = swatch.querySelector('.kindleExtraMessage');
+            if (extraMessage) {
+                const priceElement = extraMessage.querySelector('.a-color-price') || extraMessage.querySelector('span.a-color-price');
+                const additionalPrice = cleanPrice(priceElement?.textContent || extraMessage.textContent);
+                if (additionalPrice !== null && !prices.some(p => p.price === additionalPrice)) {
+                    prices.push({ price: additionalPrice, type: 'price' });
+                }
+            }
+
+            // For the selected format, also check the main page's strikethrough price
             if (isSelected) {
-                const strikethroughElement = doc.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"]');
-                if (strikethroughElement) {
-                    const listPrice = cleanPrice(strikethroughElement.textContent);
-                    if (listPrice !== null) {
-                        prices.push({ price: listPrice, type: 'other_price' });
+                const listPriceEl = doc.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"] span');
+                if (listPriceEl) {
+                    const listPrice = cleanPrice(listPriceEl.textContent);
+                    if (listPrice !== null && !prices.some(p => p.price === listPrice)) {
+                        prices.push({ price: listPrice, type: 'price' });
                     }
                 }
             }
-
-            // Determine price types like the original function
-            if (prices.length > 0) {
-                const nonKuPrices = prices.filter(p => p.type !== 'ku_price');
-                if (nonKuPrices.length > 0) {
-                    const maxPrice = Math.max(...nonKuPrices.map(p => p.price));
-                    let listPriceSet = false;
-                    for (const price of prices) {
-                        if (price.type !== 'ku_price') {
-                            if (price.price === maxPrice && !listPriceSet) {
-                                price.type = 'list_price';
-                                listPriceSet = true;
-                            } else if (price.type !== 'list_price') {
-                                price.type = 'other_price';
-                            }
+            
+            // Finalize price types (list_price vs other_price)
+            const nonKuPrices = prices.filter(p => p.type !== 'ku_price');
+            if (nonKuPrices.length > 0) {
+                const maxPrice = Math.max(...nonKuPrices.map(p => p.price));
+                let listPriceSet = false;
+                for (const p of prices) {
+                    if (p.type !== 'ku_price') {
+                        if (p.price === maxPrice && !listPriceSet) {
+                            p.type = 'list_price';
+                            listPriceSet = true;
+                        } else {
+                            p.type = 'other_price';
                         }
                     }
                 }
             }
+            // --- End of new price extraction ---
 
             formats.push({
-                formatName,
                 asin,
+                formatName,
                 prices,
-                isKindleUnlimited,
+                isKindleUnlimited: isKU,
                 isSelected
             });
         });

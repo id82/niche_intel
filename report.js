@@ -767,7 +767,7 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     
     // Filter for books with monthly royalty >= $500
     const highRoyaltyBooks = allData.filter(data => {
-        if (!data) return false;
+        if (!data || !data.royalties || data.royalties.error) return false;
         const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
         return royaltyMonth !== null && royaltyMonth !== undefined && royaltyMonth >= 500;
     });
@@ -823,10 +823,10 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         const formats = get(['formats'], data);
         let price = null;
         if (formats && formats.length > 0) {
-            const selectedFormat = formats.find(f => f.isSelected) || formats[0];
-            if (selectedFormat && selectedFormat.prices && selectedFormat.prices.length > 0) {
-                const listPrice = selectedFormat.prices.find(p => p.type === 'list_price')?.price;
-                price = listPrice || selectedFormat.prices[0].price;
+            const currentFormat = formats.find(f => f.isSelected) || formats.find(f => f.formatName.toLowerCase() === 'paperback') || formats[0];
+            if (currentFormat && currentFormat.prices && currentFormat.prices.length > 0) {
+                const listPrice = currentFormat.prices.find(p => p.type === 'list_price')?.price;
+                price = listPrice || Math.max(...currentFormat.prices.map(p => p.price));
             }
         }
         
