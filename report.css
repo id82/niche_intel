@@ -170,6 +170,15 @@ th:nth-child(3), td:nth-child(3) { /* ASIN */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
+}
+
+/* ASIN header gets 0px horizontal padding */
+th:nth-child(3) {
+    padding: 12px 0px;
+}
+
+/* ASIN body cells get minimal horizontal padding */
+td:nth-child(3) {
     padding: 4px 0px;
 }
 
