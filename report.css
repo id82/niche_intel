@@ -155,21 +155,21 @@ th {
 
 /* Specific column widths for proper alignment */
 th:nth-child(1), td:nth-child(1) { /* Select */
-    flex: 0 0 40px;
-    min-width: 40px;
-    max-width: 40px;
+    flex: 0 0 20px;
+    min-width: 20px;
+    max-width: 20px;
 }
 
 th:nth-child(2), td:nth-child(2) { /* Type */
-    flex: 0 0 120px;
-    min-width: 120px;
-    max-width: 120px;
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
 }
 
 th:nth-child(3), td:nth-child(3) { /* ASIN */
-    flex: 0 0 100px;
-    min-width: 100px;
-    max-width: 100px;
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
 }
 
 /* ASIN header gets 0px horizontal padding */
@@ -198,6 +198,90 @@ th:nth-child(6), td:nth-child(6) { /* Price */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
+}
+
+th:nth-child(7), td:nth-child(7) { /* Reviews */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+th:nth-child(8), td:nth-child(8) { /* Avg Rating */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+th:nth-child(9), td:nth-child(9) { /* Review Images */
+    flex: 0 0 97px;
+    min-width: 97px;
+    max-width: 97px;
+}
+
+th:nth-child(10), td:nth-child(10) { /* Formats */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+th:nth-child(11), td:nth-child(11) { /* BSR */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+th:nth-child(12), td:nth-child(12) { /* Days on Market */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+th:nth-child(13), td:nth-child(13) { /* Length */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+th:nth-child(14), td:nth-child(14) { /* Large Trim */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+th:nth-child(15), td:nth-child(15) { /* A+ Modules */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+th:nth-child(16), td:nth-child(16) { /* UGC Videos */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+th:nth-child(17), td:nth-child(17) { /* Editorial Reviews */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+th:nth-child(18), td:nth-child(18) { /* Royalty/Book */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+th:nth-child(19), td:nth-child(19) { /* Royalty/Month */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+th:nth-child(20), td:nth-child(20) { /* Publisher */
+    flex: 0 0 120px;
+    min-width: 120px;
+    max-width: 120px;
 }
 
 /* Keep Title & Author header left aligned */
@@ -401,16 +485,100 @@ tfoot td {
 #totals-row td:first-child {
     justify-content: flex-start;
     text-align: left;
-    flex: 0 0 calc(40px + 120px + 100px + 60px + 200px);
-    min-width: calc(40px + 120px + 100px + 60px + 200px);
-    max-width: calc(40px + 120px + 100px + 60px + 200px);
+    flex: 0 0 calc(20px + 80px + 80px + 60px + 200px);
+    min-width: calc(20px + 80px + 80px + 60px + 200px);
+    max-width: calc(20px + 80px + 80px + 60px + 200px);
 }
 
 /* Align totals row data cells with regular table columns */
-#totals-row td:nth-child(2) {
+#totals-row td:nth-child(2) { /* Price */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
+}
+
+#totals-row td:nth-child(3) { /* Reviews */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#totals-row td:nth-child(4) { /* Avg Rating */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#totals-row td:nth-child(5) { /* Review Images */
+    flex: 0 0 97px;
+    min-width: 97px;
+    max-width: 97px;
+}
+
+#totals-row td:nth-child(6) { /* Formats */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#totals-row td:nth-child(7) { /* BSR */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#totals-row td:nth-child(8) { /* Days on Market */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#totals-row td:nth-child(9) { /* Length */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#totals-row td:nth-child(10) { /* Large Trim */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#totals-row td:nth-child(11) { /* A+ Modules */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#totals-row td:nth-child(12) { /* UGC Videos */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#totals-row td:nth-child(13) { /* Editorial Reviews */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#totals-row td:nth-child(14) { /* Royalty/Book */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#totals-row td:nth-child(15) { /* Royalty/Month */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#totals-row td:nth-child(16) { /* Publisher */
+    flex: 0 0 120px;
+    min-width: 120px;
+    max-width: 120px;
 }
 
 /* Styling for high royalty totals row */
@@ -431,16 +599,100 @@ tfoot td {
 #high-royalty-totals-row td:first-child {
     justify-content: flex-start;
     text-align: left;
-    flex: 0 0 calc(40px + 120px + 100px + 60px + 200px);
-    min-width: calc(40px + 120px + 100px + 60px + 200px);
-    max-width: calc(40px + 120px + 100px + 60px + 200px);
+    flex: 0 0 calc(20px + 80px + 80px + 60px + 200px);
+    min-width: calc(20px + 80px + 80px + 60px + 200px);
+    max-width: calc(20px + 80px + 80px + 60px + 200px);
 }
 
 /* Align high royalty totals row data cells with regular table columns */
-#high-royalty-totals-row td:nth-child(2) {
+#high-royalty-totals-row td:nth-child(2) { /* Price */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(3) { /* Reviews */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(4) { /* Avg Rating */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(5) { /* Review Images */
+    flex: 0 0 97px;
+    min-width: 97px;
+    max-width: 97px;
+}
+
+#high-royalty-totals-row td:nth-child(6) { /* Formats */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(7) { /* BSR */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#high-royalty-totals-row td:nth-child(8) { /* Days on Market */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#high-royalty-totals-row td:nth-child(9) { /* Length */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(10) { /* Large Trim */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(11) { /* A+ Modules */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(12) { /* UGC Videos */
+    flex: 0 0 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#high-royalty-totals-row td:nth-child(13) { /* Editorial Reviews */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#high-royalty-totals-row td:nth-child(14) { /* Royalty/Book */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#high-royalty-totals-row td:nth-child(15) { /* Royalty/Month */
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+#high-royalty-totals-row td:nth-child(16) { /* Publisher */
+    flex: 0 0 120px;
+    min-width: 120px;
+    max-width: 120px;
 }
 
 /* Ensure header buttons are visible */
