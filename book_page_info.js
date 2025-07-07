@@ -283,7 +283,7 @@ function calculateMonthlyMetrics(bookData) {
     const dailySales = estimateSales(bookData.bsr, bookType, marketCode);
     const monthlySales = Math.round(dailySales * 30);
     
-    // Calculate royalty per unit using the same logic as reference implementation
+    // Calculate royalty per unit using the EXACT same logic as book_calc.html
     let royaltyPerUnit = 0;
     if (bookType === 'ebook') {
         // Kindle royalty calculation
@@ -293,59 +293,77 @@ function calculateMonthlyMetrics(bookData) {
             royaltyPerUnit = bookData.price * 0.35; // 35% royalty
         }
     } else {
-        // Paperback/Hardcover royalty calculation using reference logic
+        // Use the exact marketplace naming from book_calc.html
+        const marketplace = `Amazon.${marketCode === 'USD' ? 'com' : 
+                              marketCode === 'CAD' ? 'ca' : 
+                              marketCode === 'GBP' ? 'co.uk' : 
+                              marketCode === 'DE' ? 'de' : 
+                              marketCode === 'FR' ? 'fr' : 
+                              marketCode === 'IT' ? 'it' : 
+                              marketCode === 'ES' ? 'es' : 
+                              marketCode === 'NL' ? 'nl' : 
+                              marketCode === 'AUD' ? 'com.au' : 
+                              marketCode === 'YEN' ? 'co.jp' : 
+                              marketCode === 'PL' ? 'pl' : 
+                              marketCode === 'SE' ? 'se' : 'com'}`;
+        
         const price = bookData.listPrice || bookData.price;
         const pageCount = bookData.pageCount;
         const trimSize = bookData.largeTrim ? 'large' : 'regular';
+        const interiorType = 'Black Ink'; // Assumption for mini table
+        const euStores = ["Amazon.de", "Amazon.fr", "Amazon.it", "Amazon.es", "Amazon.nl"];
         
-        // Royalty thresholds by market code
-        const royaltyThresholds = { USD: 9.99, DE: 9.99, FR: 9.99, IT: 9.99, ES: 9.99, NL: 9.99, GBP: 7.99, CAD: 13.99, AUD: 13.99, YEN: 1000, PL: 40, SE: 99 };
+        // Royalty thresholds using exact book_calc.html format
+        const royaltyThresholds = { 
+            "Amazon.com": 9.99, "Amazon.de": 9.99, "Amazon.fr": 9.99, "Amazon.it": 9.99, "Amazon.es": 9.99, "Amazon.nl": 9.99, 
+            "Amazon.co.uk": 7.99, "Amazon.ca": 13.99, "Amazon.com.au": 13.99, "Amazon.co.jp": 1000, "Amazon.pl": 40, "Amazon.se": 99 
+        };
         
-        // Calculate printing cost based on reference implementation
+        // Calculate printing cost using EXACT book_calc.html logic
         let printingCost = 0;
         let isSupported = true;
         
         if (bookType === 'paperback') {
-            if (pageCount >= 24 && pageCount <= 108) {
-                const costs = { USD: 2.30, CAD: 2.99, YEN: 422, GBP: 1.93, AUD: 4.74, EU: 2.05, PL: 9.58, SE: 22.84 };
-                const largeCosts = { USD: 2.84, CAD: 3.53, YEN: 530, GBP: 2.15, AUD: 5.28, EU: 2.48, PL: 11.61, SE: 27.67 };
-                const euMarkets = ['DE', 'FR', 'IT', 'ES', 'NL'];
-                const marketKey = euMarkets.includes(marketCode) ? 'EU' : marketCode;
-                printingCost = trimSize === 'regular' ? costs[marketKey] || costs.USD : largeCosts[marketKey] || largeCosts.USD;
-            } else if (pageCount >= 110 && pageCount <= 828) {
-                const costs = { USD: [1.00, 0.012], CAD: [1.26, 0.016], YEN: [206, 2], GBP: [0.85, 0.010], AUD: [2.42, 0.022], EU: [0.75, 0.012], PL: [3.51, 0.056], SE: [8.37, 0.134] };
-                const largeCosts = { USD: [1.00, 0.017], CAD: [1.26, 0.021], YEN: [206, 3], GBP: [0.85, 0.012], AUD: [2.42, 0.027], EU: [0.75, 0.016], PL: [3.51, 0.075], SE: [8.37, 0.179] };
-                const euMarkets = ['DE', 'FR', 'IT', 'ES', 'NL'];
-                const marketKey = euMarkets.includes(marketCode) ? 'EU' : marketCode;
-                const [fixed, perPage] = trimSize === 'regular' ? (costs[marketKey] || costs.USD) : (largeCosts[marketKey] || largeCosts.USD);
-                printingCost = fixed + (pageCount * perPage);
-            } else { 
-                isSupported = false; 
+            if (interiorType === 'Black Ink') {
+                if (pageCount >= 24 && pageCount <= 108) {
+                    const costs = { 'Amazon.com': 2.30, 'Amazon.ca': 2.99, 'Amazon.co.jp': 422, 'Amazon.co.uk': 1.93, 'Amazon.com.au': 4.74, 'EU': 2.05, 'Amazon.pl': 9.58, 'Amazon.se': 22.84 };
+                    const largeCosts = { 'Amazon.com': 2.84, 'Amazon.ca': 3.53, 'Amazon.co.jp': 530, 'Amazon.co.uk': 2.15, 'Amazon.com.au': 5.28, 'EU': 2.48, 'Amazon.pl': 11.61, 'Amazon.se': 27.67 };
+                    const marketKey = euStores.includes(marketplace) ? 'EU' : marketplace;
+                    printingCost = trimSize === 'regular' ? costs[marketKey] : largeCosts[marketKey];
+                } else if (pageCount >= 110 && pageCount <= 828) {
+                    const costs = { 'Amazon.com': [1.00, 0.012], 'Amazon.ca': [1.26, 0.016], 'Amazon.co.jp': [206, 2], 'Amazon.co.uk': [0.85, 0.010], 'Amazon.com.au': [2.42, 0.022], 'EU': [0.75, 0.012], 'Amazon.pl': [3.51, 0.056], 'Amazon.se': [8.37, 0.134] };
+                    const largeCosts = { 'Amazon.com': [1.00, 0.017], 'Amazon.ca': [1.26, 0.021], 'Amazon.co.jp': [206, 3], 'Amazon.co.uk': [0.85, 0.012], 'Amazon.com.au': [2.42, 0.027], 'EU': [0.75, 0.016], 'Amazon.pl': [3.51, 0.075], 'Amazon.se': [8.37, 0.179] };
+                    const marketKey = euStores.includes(marketplace) ? 'EU' : marketplace;
+                    const [fixed, perPage] = trimSize === 'regular' ? costs[marketKey] : largeCosts[marketKey];
+                    printingCost = fixed + (pageCount * perPage);
+                } else { 
+                    isSupported = false; 
+                }
             }
         } else if (bookType === 'hardcover') {
-            if (pageCount >= 75 && pageCount <= 108) {
-                const costs = { USD: 6.80, GBP: 5.23, EU: 5.95, PL: 27.85, SE: 66.38 };
-                const largeCosts = { USD: 7.49, GBP: 5.45, EU: 6.35, PL: 29.87, SE: 71.21 };
-                const euMarkets = ['DE', 'FR', 'IT', 'ES', 'NL'];
-                const marketKey = euMarkets.includes(marketCode) ? 'EU' : marketCode;
-                if (costs[marketKey]) { 
-                    printingCost = trimSize === 'regular' ? costs[marketKey] : largeCosts[marketKey]; 
+            if (interiorType === 'Black Ink') {
+                if (pageCount >= 75 && pageCount <= 108) {
+                    const costs = { 'Amazon.com': 6.80, 'Amazon.co.uk': 5.23, 'EU': 5.95, 'Amazon.pl': 27.85, 'Amazon.se': 66.38 };
+                    const largeCosts = { 'Amazon.com': 7.49, 'Amazon.co.uk': 5.45, 'EU': 6.35, 'Amazon.pl': 29.87, 'Amazon.se': 71.21 };
+                    const marketKey = euStores.includes(marketplace) ? 'EU' : marketplace;
+                    if (costs[marketKey]) {
+                        printingCost = trimSize === 'regular' ? costs[marketKey] : largeCosts[marketKey];
+                    } else { 
+                        isSupported = false; 
+                    }
+                } else if (pageCount >= 110 && pageCount <= 550) {
+                    const costs = { 'Amazon.com': [5.65, 0.012], 'Amazon.co.uk': [4.15, 0.010], 'EU': [4.65, 0.012], 'Amazon.pl': [20.34, 0.056], 'Amazon.se': [48.49, 0.134] };
+                    const largeCosts = { 'Amazon.com': [5.65, 0.017], 'Amazon.co.uk': [4.15, 0.012], 'EU': [4.65, 0.016], 'Amazon.pl': [20.34, 0.075], 'Amazon.se': [48.49, 0.179] };
+                    const marketKey = euStores.includes(marketplace) ? 'EU' : marketplace;
+                    if (costs[marketKey]) {
+                        const [fixed, perPage] = trimSize === 'regular' ? costs[marketKey] : largeCosts[marketKey];
+                        printingCost = fixed + (pageCount * perPage);
+                    } else { 
+                        isSupported = false; 
+                    }
                 } else { 
                     isSupported = false; 
                 }
-            } else if (pageCount >= 110 && pageCount <= 550) {
-                const costs = { USD: [5.65, 0.012], GBP: [4.15, 0.010], EU: [4.65, 0.012], PL: [20.34, 0.056], SE: [48.49, 0.134] };
-                const largeCosts = { USD: [5.65, 0.017], GBP: [4.15, 0.012], EU: [4.65, 0.016], PL: [20.34, 0.075], SE: [48.49, 0.179] };
-                const euMarkets = ['DE', 'FR', 'IT', 'ES', 'NL'];
-                const marketKey = euMarkets.includes(marketCode) ? 'EU' : marketCode;
-                if (costs[marketKey]) { 
-                    const [fixed, perPage] = trimSize === 'regular' ? costs[marketKey] : largeCosts[marketKey]; 
-                    printingCost = fixed + (pageCount * perPage); 
-                } else { 
-                    isSupported = false; 
-                }
-            } else { 
-                isSupported = false; 
             }
         } else { 
             isSupported = false; 
@@ -354,20 +372,21 @@ function calculateMonthlyMetrics(bookData) {
         if (isSupported && printingCost > 0) {
             printingCost = parseFloat(printingCost.toFixed(2));
             
-            // Calculate royalty rate
+            // Calculate royalty rate using exact book_calc.html logic
             let royaltyRate = 0.6;
-            const threshold = royaltyThresholds[marketCode] || 9.99;
-            if (price < threshold) royaltyRate = 0.5;
+            const threshold = royaltyThresholds[marketplace];
+            if (threshold && price < threshold) {
+                royaltyRate = 0.5;
+            }
             
-            // Handle VAT for EU markets
-            let priceAfterVat = price;
-            const euMarkets = ['DE', 'FR', 'IT', 'ES', 'NL'];
-            if (euMarkets.includes(marketCode)) {
-                let vatRate = 0.07; // DE, NL
-                if (marketCode === "FR") vatRate = 0.055;
-                if (["IT", "ES"].includes(marketCode)) vatRate = 0.04;
-                const vat = price * vatRate;
-                priceAfterVat = price - vat;
+            // Handle VAT for EU markets using exact book_calc.html logic
+            let VAT = 0, priceAfterVat = price;
+            if (euStores.includes(marketplace)) {
+                let vatRate = 0.07; // Default for DE, NL
+                if (marketplace === "Amazon.fr") vatRate = 0.055;
+                if (["Amazon.it", "Amazon.es"].includes(marketplace)) vatRate = 0.04;
+                VAT = price * vatRate;
+                priceAfterVat = price - VAT;
             }
             
             royaltyPerUnit = Math.max(0, priceAfterVat * royaltyRate - printingCost);
