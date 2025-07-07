@@ -153,6 +153,7 @@ input:checked + .toggle-slider:before {
     flex-direction: row;
     align-items: center;
     margin: 0 20px;
+    overflow-x: auto;
 }
 
 /* Filter inputs aligned with table columns */
@@ -256,13 +257,18 @@ input:checked + .toggle-slider:before {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 0 4px;
+    padding: 0 8px;
+}
+
+/* First column gets special padding to match table */
+.filter-container > div:nth-child(1) {
+    padding: 0 8px;
 }
 
 .filter-input,
 .filter-select {
     width: 100%;
-    padding: 3px 4px;
+    padding: 3px 8px;
     border: 1px solid #cbd5e1;
     border-radius: 3px;
     font-size: 11px;

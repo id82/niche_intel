@@ -306,7 +306,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td></td> <!-- Publisher -->
                 </tr>
                 <tr id="high-royalty-totals-row" style="font-weight: bold; background-color: #e8f5e8;">
-                    <td colspan="5">High Royalty (≥$500/month) - <span id="high-royalty-count">0</span></td>
+                    <td colspan="5">High Royalty (≥$500/month) -  <span id="high-royalty-count">0</span></td>
                     <td id="high-avg-price">$0.00</td>
                     <td id="high-total-reviews">0</td>
                     <td id="high-avg-rating">0.00</td>
