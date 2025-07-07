@@ -1571,8 +1571,6 @@ function applyFilters() {
     // Update totals based on filtered data
     calculateAndDisplayTotals(filteredData);
     calculateAndDisplayHighRoyaltyTotals(filteredData);
-    
-    console.log(`Filters applied: ${visibleCount} rows visible out of ${rows.length}`);
 }
 
 function buildActiveFilters() {
@@ -1743,8 +1741,6 @@ function clearAllFilters() {
     // Recalculate totals with all data
     calculateAndDisplayTotals(allData);
     calculateAndDisplayHighRoyaltyTotals(allData);
-    
-    console.log('All filters cleared');
 }
 
 function debounce(func, wait) {
@@ -1771,10 +1767,7 @@ function setupScrollSynchronization() {
     const tbody = document.querySelector('tbody');
     const table = document.querySelector('table');
     
-    if (!filterContainer) {
-        console.warn('Cannot set up scroll sync: filter container not found');
-        return;
-    }
+    if (!filterContainer) return;
     
     // Find the actual scrollable table element
     let scrollableTableElement = null;
@@ -1783,19 +1776,11 @@ function setupScrollSynchronization() {
     for (const candidate of candidates) {
         if (candidate && candidate.scrollWidth > candidate.clientWidth) {
             scrollableTableElement = candidate;
-            console.log('Found scrollable table element:', candidate.tagName || candidate.id);
             break;
         }
     }
     
-    if (!scrollableTableElement) {
-        console.warn('No scrollable table element found');
-        return;
-    }
-    
-    console.log('Setting up scroll synchronization');
-    console.log('Filter container:', filterContainer);
-    console.log('Scrollable table element:', scrollableTableElement);
+    if (!scrollableTableElement) return;
     
     let isFilterScrolling = false;
     let isTableScrolling = false;
@@ -1805,7 +1790,6 @@ function setupScrollSynchronization() {
         if (!isTableScrolling) {
             isFilterScrolling = true;
             scrollableTableElement.scrollLeft = this.scrollLeft;
-            console.log('Filter scrolled to:', this.scrollLeft, 'syncing table to:', scrollableTableElement.scrollLeft);
             setTimeout(() => { isFilterScrolling = false; }, 50);
         }
     });
@@ -1815,12 +1799,10 @@ function setupScrollSynchronization() {
         if (!isFilterScrolling) {
             isTableScrolling = true;
             filterContainer.scrollLeft = this.scrollLeft;
-            console.log('Table scrolled to:', this.scrollLeft, 'syncing filter to:', filterContainer.scrollLeft);
             setTimeout(() => { isTableScrolling = false; }, 50);
         }
     });
     
     scrollSyncInitialized = true;
-    console.log('Scroll synchronization initialized successfully');
 }
 
