@@ -980,12 +980,18 @@ function runFullProductPageExtraction() {
                 royaltyPerUnit = price * 0.35; // 35% royalty
                 console.log(`scrapers.js: Kindle 35% royalty applied: $${royaltyPerUnit.toFixed(2)}`);
             }
-        } else {
-            // Simplified paperback royalty calculation
-            const printingCost = 0.85 + (pageCount * 0.012); // Simplified printing cost
+        } else if (book_type.includes('hardcover')) {
+            // Simplified hardcover royalty calculation
+            const printingCost = 5.65 + (pageCount * 0.012); // Simplified printing cost for hardcover
             const royaltyRate = price < 10 ? 0.5 : 0.6; // Simplified royalty rate
             royaltyPerUnit = Math.max(0, (price * royaltyRate) - printingCost);
-            console.log(`scrapers.js: Paperback royalty: $${price} * ${royaltyRate} - $${printingCost.toFixed(2)} = $${royaltyPerUnit.toFixed(2)}`);
+            console.log(`scrapers.js: Hardcover royalty: ($${price} * ${royaltyRate}) - $${printingCost.toFixed(2)} = $${royaltyPerUnit.toFixed(2)}`);
+        } else {
+            // Simplified paperback royalty calculation (now the default fallback)
+            const printingCost = 0.85 + (pageCount * 0.012); // Simplified printing cost for paperback
+            const royaltyRate = price < 10 ? 0.5 : 0.6; // Simplified royalty rate
+            royaltyPerUnit = Math.max(0, (price * royaltyRate) - printingCost);
+            console.log(`scrapers.js: Paperback royalty: ($${price} * ${royaltyRate}) - $${printingCost.toFixed(2)} = $${royaltyPerUnit.toFixed(2)}`);
         }
         
         const monthly_royalty = Math.round(royaltyPerUnit * monthly_sales);
@@ -1044,7 +1050,8 @@ function runFullProductPageExtraction() {
         let printing_cost = 0;
         let is_supported = true;
 
-        if (book_type === 'paperback') {
+        // Use .includes() for more flexible matching (e.g., "Mass Market Paperback")
+        if (book_type.includes('paperback')) {
             if (page_count >= 24 && page_count <= 108) {
                 const costs = { USD: 2.30, CAD: 2.99, YEN: 422, GBP: 1.93, AUD: 4.74, EU: 2.05, PL: 9.58, SE: 22.84 };
                 const largeCosts = { USD: 2.84, CAD: 3.53, YEN: 530, GBP: 2.15, AUD: 5.28, EU: 2.48, PL: 11.61, SE: 27.67 };
@@ -1055,7 +1062,7 @@ function runFullProductPageExtraction() {
                 const [fixed, perPage] = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey];
                 printing_cost = fixed + (page_count * perPage);
             } else { is_supported = false; }
-        } else if (book_type === 'hardcover') {
+        } else if (book_type.includes('hardcover')) {
             if (page_count >= 75 && page_count <= 108) {
                 const costs = { USD: 6.80, GBP: 5.23, EU: 5.95, PL: 27.85, SE: 66.38 };
                 const largeCosts = { USD: 7.49, GBP: 5.45, EU: 6.35, PL: 29.87, SE: 71.21 };
@@ -1065,7 +1072,9 @@ function runFullProductPageExtraction() {
                 const largeCosts = { USD: [5.65, 0.017], GBP: [4.15, 0.012], EU: [4.65, 0.016], PL: [20.34, 0.075], SE: [48.49, 0.179] };
                 if (costs[marketKey]) { const [fixed, perPage] = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey]; printing_cost = fixed + (page_count * perPage); } else { is_supported = false; }
             } else { is_supported = false; }
-        } else { is_supported = false; }
+        } else { 
+            is_supported = false; 
+        }
 
         if (!is_supported || !printing_cost) {
             console.warn(`scrapers.js: Combination not supported (Type: ${book_type}, Pages: ${page_count}), falling back to simplified calculation`);
@@ -1543,9 +1552,14 @@ function parseProductPageFromHTML(htmlString, url) {
             } else {
                 royaltyPerUnit = price * 0.35; // 35% royalty
             }
+        } else if (book_type.includes('hardcover')) {
+            // Simplified hardcover royalty calculation
+            const printingCost = 5.65 + (pageCount * 0.012); // Simplified printing cost for hardcover
+            const royaltyRate = price < 10 ? 0.5 : 0.6; // Simplified royalty rate
+            royaltyPerUnit = Math.max(0, (price * royaltyRate) - printingCost);
         } else {
-            // Simplified paperback royalty calculation
-            const printingCost = 0.85 + (pageCount * 0.012); // Simplified printing cost
+            // Simplified paperback royalty calculation (now the default fallback)
+            const printingCost = 0.85 + (pageCount * 0.012); // Simplified printing cost for paperback
             const royaltyRate = price < 10 ? 0.5 : 0.6; // Simplified royalty rate
             royaltyPerUnit = Math.max(0, (price * royaltyRate) - printingCost);
         }
@@ -1601,7 +1615,8 @@ function parseProductPageFromHTML(htmlString, url) {
         let printing_cost = 0;
         let is_supported = true;
 
-        if (book_type === 'paperback') {
+        // Use .includes() for more flexible matching
+        if (book_type.includes('paperback')) {
             if (page_count >= 24 && page_count <= 108) {
                 const costs = { USD: 2.30, CAD: 2.99, YEN: 422, GBP: 1.93, AUD: 4.74, EU: 2.05, PL: 9.58, SE: 22.84 };
                 const largeCosts = { USD: 2.84, CAD: 3.53, YEN: 530, GBP: 2.15, AUD: 5.28, EU: 2.48, PL: 11.61, SE: 27.67 };
@@ -1612,7 +1627,7 @@ function parseProductPageFromHTML(htmlString, url) {
                 const [fixed, perPage] = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey];
                 printing_cost = fixed + (page_count * perPage);
             } else { is_supported = false; }
-        } else if (book_type === 'hardcover') {
+        } else if (book_type.includes('hardcover')) {
             if (page_count >= 75 && page_count <= 108) {
                 const costs = { USD: 6.80, GBP: 5.23, EU: 5.95, PL: 27.85, SE: 66.38 };
                 const largeCosts = { USD: 7.49, GBP: 5.45, EU: 6.35, PL: 29.87, SE: 71.21 };
