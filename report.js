@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 checkbox.setAttribute('data-listener-added', 'true');
             }
             processedCount++;
-            progressText.textContent = `Progress: ${processedCount} / ${totalToProcess} products analyzed (processing in batches of 5).`;
+            progressText.textContent = `Progress: ${processedCount} / ${totalToProcess} products analyzed.`;
     
     // Update progress bar if we have one
     const progressBar = document.getElementById('progress-bar');
