@@ -1502,7 +1502,7 @@ function setupFilterFunctionality() {
     // Toggle filter container visibility
     filterToggle.addEventListener('change', function() {
         if (this.checked) {
-            filterContainer.style.display = 'block';
+            filterContainer.style.display = 'flex';
         } else {
             filterContainer.style.display = 'none';
             // Clear all filters when toggle is turned off
