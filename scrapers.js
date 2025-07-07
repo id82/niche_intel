@@ -1104,3 +1104,403 @@ function runExtractor() {
         return { error: "Unknown page type." };
     }
 }
+
+/**
+ * ===================================================================================
+ * START OF SCRIPT: In-Memory HTML Parser for Offscreen Document
+ * This function takes raw HTML and a URL, parses it, and extracts data without
+ * needing a live browser tab.
+ * ===================================================================================
+ */
+function parseProductPageFromHTML(htmlString, url) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    
+    // Helper function to query the in-memory document
+    const find = (selector) => doc.querySelector(selector);
+    const findAll = (selector) => doc.querySelectorAll(selector);
+
+    // --- Adapt Helper Functions to use the 'doc' object ---
+    const cleanText = (text) => text?.replace(/[\s\u200F\u200E]+/g, ' ').trim() || null;
+    const getText = (el, selector) => el ? cleanText(el.querySelector(selector)?.textContent) : null;
+    const getAttr = (el, selector, attr) => el?.querySelector(selector)?.getAttribute(attr) || null;
+    const normalizeDate = (dateString) => {
+         if (!dateString) return null;
+        try {
+            const cleanDateString = dateString.replace(/(\w{3})\./, '$1');
+            const date = new Date(cleanDateString);
+            if (isNaN(date.getTime())) return dateString;
+            return date.toISOString().split('T')[0];
+        } catch (e) { return dateString; }
+    };
+    
+    // --- Adapted Extraction Logic ---
+    function _extractProductDetails(doc) {
+        // This is an adapted version of the original function
+        const details = { bsr: null, print_length: null, publication_date: null, publisher: null, days_on_market: null, large_trim: false };
+        const detailContainer = doc.querySelector("#detailBullets_feature_div, #productDetails_feature_div");
+
+        if (detailContainer) {
+            const findDetailValue = (label) => {
+                const labelEl = [...detailContainer.querySelectorAll('.a-text-bold, th')].find(
+                    el => el.textContent.trim().startsWith(label)
+                );
+                if (!labelEl) return null;
+                const valueEl = labelEl.nextElementSibling || labelEl.closest('tr')?.querySelector('td:last-child');
+                return valueEl ? cleanText(valueEl.textContent) : null;
+            };
+
+            const publisherText = findDetailValue("Publisher");
+            if (publisherText) {
+                details.publisher = publisherText.split('(')[0].trim();
+                let pubDateText = findDetailValue("Publication date") || publisherText.match(/\(([^)]+)\)/)?.[1];
+                details.publication_date = normalizeDate(pubDateText);
+                if (details.publication_date) {
+                    const timeDiff = new Date().getTime() - new Date(details.publication_date).getTime();
+                    details.days_on_market = Math.floor(timeDiff / (1000 * 3600 * 24));
+                }
+            }
+            
+            const printLengthText = findDetailValue("Print length");
+            if (printLengthText) {
+                details.print_length = parseInt(printLengthText.match(/\d+/)[0], 10);
+            }
+            
+            const dimensionsText = findDetailValue("Dimensions");
+            if (dimensionsText) {
+                const numbers = dimensionsText.match(/(\d+\.?\d*)/g);
+                if (numbers && numbers.length === 3) {
+                    const sortedDims = numbers.map(parseFloat).sort((a,b) => b-a);
+                    const [height, width] = sortedDims;
+                    const unitMatch = dimensionsText.match(/inches|cm/i);
+                    const unit = unitMatch ? unitMatch[0].toLowerCase() : null;
+                    if (unit === 'inches') details.large_trim = width > 6.12 || height > 9;
+                    else if (unit === 'cm') details.large_trim = width > 15.54 || height > 22.86;
+                }
+            }
+        }
+        
+        // BSR Extraction
+        const bsrTextElement = [...findAll('#detailBullets_feature_div li, #productDetails_detailBullets_sections1 tr')]
+            .find(el => el.textContent.includes('Best Sellers Rank'));
+        if (bsrTextElement) {
+            const bsrMatch = bsrTextElement.textContent.match(/#([\d,]+)/);
+            if(bsrMatch) details.bsr = parseInt(bsrMatch[1].replace(/,/g, ''), 10);
+        }
+
+        return details;
+    }
+    
+    // --- Adapted Helper Functions ---
+    const cleanPrice = (text) => {
+        if (!text) return null;
+        const match = text.match(/(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
+        if (!match) return null;
+
+        let priceStr = match[0].replace(/[$,€£¥]/g, ''); // Remove currency symbols
+        if (priceStr.includes(',') && priceStr.includes('.')) {
+            if (priceStr.lastIndexOf(',') > priceStr.lastIndexOf('.')) {
+                priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+            } else {
+                priceStr = priceStr.replace(/,/g, '');
+            }
+        } else {
+            priceStr = priceStr.replace(',', '.');
+        }
+        
+        const price = parseFloat(priceStr);
+        return isNaN(price) ? null : price;
+    };
+
+    function _getMarketplaceInfoFromURL(url) {
+        const tldMap = {
+            'amazon.com': { code: 'USD' }, 'amazon.ca': { code: 'CAD' }, 'amazon.co.uk': { code: 'GBP' },
+            'amazon.de': { code: 'DE' }, 'amazon.fr': { code: 'FR' }, 'amazon.it': { code: 'IT' },
+            'amazon.es': { code: 'ES' }, 'amazon.nl': { code: 'NL' }, 'amazon.com.au': { code: 'AUD' },
+            'amazon.co.jp': { code: 'YEN' }, 'amazon.pl': { code: 'PL' }, 'amazon.se': { code: 'SE' }
+        };
+        for (const key in tldMap) {
+            if (url.includes(key)) return tldMap[key];
+        }
+        return { code: 'USD' }; // Default fallback
+    }
+
+    // Sales estimation functions adapted for offscreen parsing
+    const multipliers = {
+      ebook: { USD: 1, GBP: 0.31, DE: 0.36, FR: 0.11, ES: 0.093, IT: 0.10, NL: 0.023, YEN: 0.22, IN: 0.021, CAD: 0.17, MEX: 0.044, AUD: 0.022, SE: 1, PL: 1 },
+      paperback: { USD: 1, GBP: 0.16, DE: 0.19, FR: 0.055, ES: 0.048, IT: 0.053, NL: 0.012, YEN: 0.12, IN: 0.011, CAD: 0.089, MEX: 0.023, AUD: 0.011, SE: 1, PL: 1 },
+      hardcover: { USD: 1, GBP: 0.16, DE: 0.19, FR: 0.055, ES: 0.048, IT: 0.053, NL: 0.012, YEN: 0.12, IN: 0.011, CAD: 0.089, MEX: 0.023, AUD: 0.011, SE: 1, PL: 1 }
+    };
+    const A = 3.35038, B = -0.29193, C = -0.070538;
+    function _coreUnits(bsr) {
+      if (bsr <= 100000) {
+        const t = Math.log10(bsr);
+        return 10 ** (A + B * t + C * t * t);
+      }
+      return 100000 / (100000 + (bsr - 100000) * 8);
+    }
+    function _getMultiplier(type, market) { return multipliers[type]?.[market] ?? 1; }
+    function _estimateSales(bsr, bookType, market) {
+      if (!Number.isFinite(bsr) || bsr < 1) return 0;
+      return Math.max(0, 1.37 * _coreUnits(bsr) * _getMultiplier(bookType, market));
+    }
+
+    const royaltyThresholds_by_code = { USD: 9.99, DE: 9.99, FR: 9.99, IT: 9.99, ES: 9.99, NL: 9.99, GBP: 7.99, CAD: 13.99, AUD: 13.99, YEN: 1000, PL: 40, SE: 99 };
+
+    // --- Adapted Format Extraction Logic ---
+    function _extractAmazonBookFormats(doc, currentUrl) {
+        const formats = [];
+        const swatches = doc.querySelectorAll('[id^="tmm-grid-swatch-"]');
+        const currentAsin = currentUrl.match(/\/dp\/([A-Z0-9]{10})/)?.[1];
+
+        swatches.forEach(swatch => {
+            const formatSpan = swatch.querySelector('span[aria-label*="Format:"]');
+            if (!formatSpan) return;
+
+            const formatName = formatSpan.getAttribute('aria-label')?.replace('Format: ', '').trim();
+            if (!formatName) return;
+
+            // Extract ASIN
+            let asin = null;
+            const link = swatch.querySelector('a[href*="/dp/"]');
+            if (link) {
+                const asinMatch = link.getAttribute('href')?.match(/\/dp\/([A-Z0-9]{10})/);
+                asin = asinMatch ? asinMatch[1] : null;
+            } else {
+                asin = currentAsin; // This is the selected format
+            }
+
+            // Extract all possible prices like the original function
+            const prices = [];
+            const priceElement = swatch.querySelector('.slot-price span[aria-label]');
+            const priceText = priceElement?.getAttribute('aria-label') || priceElement?.textContent || '';
+            
+            let isKindleUnlimited = false;
+            if (priceText.includes('$0.00') && priceText.toLowerCase().includes('kindle unlimited')) {
+                isKindleUnlimited = true;
+                prices.push({ price: 0, type: 'ku_price' });
+            } else {
+                const currentPrice = cleanPrice(priceText);
+                if (currentPrice !== null) {
+                    prices.push({ price: currentPrice, type: 'current_price' });
+                }
+            }
+
+            // Look for strikethrough price (list price) - only for selected format
+            const isSelected = !link || currentUrl.includes(asin);
+            if (isSelected) {
+                const strikethroughElement = doc.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"]');
+                if (strikethroughElement) {
+                    const listPrice = cleanPrice(strikethroughElement.textContent);
+                    if (listPrice !== null) {
+                        prices.push({ price: listPrice, type: 'other_price' });
+                    }
+                }
+            }
+
+            // Determine price types like the original function
+            if (prices.length > 0) {
+                const nonKuPrices = prices.filter(p => p.type !== 'ku_price');
+                if (nonKuPrices.length > 0) {
+                    const maxPrice = Math.max(...nonKuPrices.map(p => p.price));
+                    let listPriceSet = false;
+                    for (const price of prices) {
+                        if (price.type !== 'ku_price') {
+                            if (price.price === maxPrice && !listPriceSet) {
+                                price.type = 'list_price';
+                                listPriceSet = true;
+                            } else if (price.type !== 'list_price') {
+                                price.type = 'other_price';
+                            }
+                        }
+                    }
+                }
+            }
+
+            formats.push({
+                formatName,
+                asin,
+                prices,
+                isKindleUnlimited,
+                isSelected
+            });
+        });
+
+        return formats;
+    }
+
+    // --- Adapted Editorial Reviews Extraction ---
+    function _extractEditorialReviews(doc) {
+        const editorialContainer = doc.querySelector('#editorialReviews_feature_div');
+        if (!editorialContainer) return null;
+
+        const reviews = {};
+        
+        // Try primary structure first
+        const expanderContainers = editorialContainer.querySelectorAll('.a-row.a-expander-container.a-expander-extend-container');
+        
+        if (expanderContainers.length > 0) {
+            expanderContainers.forEach(container => {
+                const titleElement = container.querySelector('h3');
+                const contentElement = container.querySelector('.a-expander-content');
+                
+                if (titleElement && contentElement) {
+                    const title = cleanText(titleElement.textContent);
+                    const content = cleanText(contentElement.textContent);
+                    if (title && content) {
+                        reviews[title] = content;
+                    }
+                }
+            });
+        } else {
+            // Fallback to alternative structure
+            const sections = editorialContainer.querySelectorAll('.a-section.a-spacing-small.a-padding-base');
+            sections.forEach(section => {
+                const titleElement = section.querySelector('h3');
+                const contentDivs = section.querySelectorAll('div');
+                
+                if (titleElement && contentDivs.length > 0) {
+                    const title = cleanText(titleElement.textContent);
+                    const content = Array.from(contentDivs)
+                        .map(div => cleanText(div.textContent))
+                        .filter(text => text && text !== title)
+                        .join(' ');
+                    
+                    if (title && content) {
+                        reviews[title] = content;
+                    }
+                }
+            });
+        }
+
+        return Object.keys(reviews).length > 0 ? reviews : null;
+    }
+
+    // --- Adapted Royalty Calculation ---
+    function _calculateRoyaltyAndSales(format, productDetails, marketplaceInfo) {
+        const book_type = format.formatName.toLowerCase();
+        if (!format.prices || format.prices.length === 0) {
+            return { error: "No price found for this format." };
+        }
+        
+        const list_price = Math.max(...format.prices.map(p => p.price));
+        const page_count = productDetails.print_length;
+        const bsr = productDetails.bsr;
+        if (!list_price || !page_count || !bsr) {
+            return { error: "Missing essential data (price, page count, or BSR)." };
+        }
+
+        const market_code = marketplaceInfo.code;
+        const trim_size = productDetails.large_trim ? 'large' : 'regular';
+        const eu_market_codes = ['DE', 'FR', 'IT', 'ES', 'NL'];
+        const marketKey = eu_market_codes.includes(market_code) ? 'EU' : market_code;
+
+        let printing_cost = 0;
+        let is_supported = true;
+
+        if (book_type === 'paperback') {
+            if (page_count >= 24 && page_count <= 108) {
+                const costs = { USD: 2.30, CAD: 2.99, YEN: 422, GBP: 1.93, AUD: 4.74, EU: 2.05, PL: 9.58, SE: 22.84 };
+                const largeCosts = { USD: 2.84, CAD: 3.53, YEN: 530, GBP: 2.15, AUD: 5.28, EU: 2.48, PL: 11.61, SE: 27.67 };
+                printing_cost = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey];
+            } else if (page_count >= 110 && page_count <= 828) {
+                const costs = { USD: [1.00, 0.012], CAD: [1.26, 0.016], YEN: [206, 2], GBP: [0.85, 0.010], AUD: [2.42, 0.022], EU: [0.75, 0.012], PL: [3.51, 0.056], SE: [8.37, 0.134] };
+                const largeCosts = { USD: [1.00, 0.017], CAD: [1.26, 0.021], YEN: [206, 3], GBP: [0.85, 0.012], AUD: [2.42, 0.027], EU: [0.75, 0.016], PL: [3.51, 0.075], SE: [8.37, 0.179] };
+                const [fixed, perPage] = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey];
+                printing_cost = fixed + (page_count * perPage);
+            } else { is_supported = false; }
+        } else if (book_type === 'hardcover') {
+            if (page_count >= 75 && page_count <= 108) {
+                const costs = { USD: 6.80, GBP: 5.23, EU: 5.95, PL: 27.85, SE: 66.38 };
+                const largeCosts = { USD: 7.49, GBP: 5.45, EU: 6.35, PL: 29.87, SE: 71.21 };
+                if (costs[marketKey]) { printing_cost = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey]; } else { is_supported = false; }
+            } else if (page_count >= 110 && page_count <= 550) {
+                const costs = { USD: [5.65, 0.012], GBP: [4.15, 0.010], EU: [4.65, 0.012], PL: [20.34, 0.056], SE: [48.49, 0.134] };
+                const largeCosts = { USD: [5.65, 0.017], GBP: [4.15, 0.012], EU: [4.65, 0.016], PL: [20.34, 0.075], SE: [48.49, 0.179] };
+                if (costs[marketKey]) { const [fixed, perPage] = trim_size === 'regular' ? costs[marketKey] : largeCosts[marketKey]; printing_cost = fixed + (page_count * perPage); } else { is_supported = false; }
+            } else { is_supported = false; }
+        } else { is_supported = false; }
+
+        if (!is_supported || !printing_cost) {
+            return { error: `Combination not supported (Type: ${book_type}, Pages: ${page_count})` };
+        }
+        printing_cost = parseFloat(printing_cost.toFixed(2));
+
+        let royalty_rate = 0.6;
+        const threshold = royaltyThresholds_by_code[market_code];
+        if (threshold && list_price < threshold) {
+            royalty_rate = 0.5;
+        }
+
+        let VAT = 0, price_after_vat = list_price;
+        if (eu_market_codes.includes(market_code)) {
+            let vat_rate = 0.07; // DE, NL
+            if (market_code === "FR") vat_rate = 0.055;
+            if (["IT", "ES"].includes(market_code)) vat_rate = 0.04;
+            VAT = list_price * vat_rate;
+            price_after_vat = list_price - VAT;
+        }
+        
+        const calculated_royalty = price_after_vat * royalty_rate - printing_cost;
+        const royalty_amount = Math.max(0, parseFloat(calculated_royalty.toFixed(2)));
+        const daily_sales = _estimateSales(bsr, book_type, market_code);
+        const monthly_sales = Math.round(daily_sales * 30);
+        
+        function customRoundRoyalty(value) {
+            if (value >= 50) {
+                return Math.round(value / 100) * 100;
+            } else {
+                return Math.round(value / 10) * 10;
+            }
+        }
+
+        const monthly_royalty_unrounded = (royalty_amount > 0 ? royalty_amount * monthly_sales : 0);
+        const monthly_royalty = customRoundRoyalty(monthly_royalty_unrounded);
+
+        return {
+            royalty_per_unit: royalty_amount,
+            monthly_sales: monthly_sales,
+            monthly_royalty: monthly_royalty,
+            calculation_assumptions: {
+                interior_type: 'Black Ink', list_price_used: list_price,
+                royalty_rate_used: royalty_rate, printing_cost: printing_cost,
+                bsr_used: bsr, vat_applied: parseFloat(VAT.toFixed(2))
+            }
+        };
+    }
+    
+    const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/);
+    const fullProductData = {
+        asin: asinMatch ? asinMatch[1] : null,
+        title: find('span#productTitle')?.textContent.trim() || null,
+        cover_url: find('img#landingImage')?.src || null,
+        product_details: _extractProductDetails(doc),
+        formats: _extractAmazonBookFormats(doc, url),
+        customer_reviews: {
+            average_rating: parseFloat(find('div#averageCustomerReviews a span.a-icon-alt')?.textContent),
+            review_count: parseInt(find('span#acrCustomerReviewText')?.textContent.replace(/,/g, '')),
+            review_image_count: doc.querySelectorAll('#cm_cr_carousel_images_section .a-carousel-card').length
+        },
+        aplus_content: { modulesCount: findAll('[data-aplus-module], .aplus-module').length },
+        ugc_videos: { video_count: findAll('[data-video-url], .video-block').length },
+        editorial_reviews: _extractEditorialReviews(doc),
+        royalties: null // Will be calculated below
+    };
+
+    // --- INTEGRATE ROYALTY CALCULATION ---
+    const marketplaceInfo = _getMarketplaceInfoFromURL(url);
+    const currentFormat = fullProductData.formats.find(f => f.isSelected);
+    if (currentFormat) {
+        const formatNameLower = currentFormat.formatName.toLowerCase();
+        if (formatNameLower === 'paperback' || formatNameLower === 'hardcover') {
+            fullProductData.royalties = _calculateRoyaltyAndSales(
+                currentFormat,
+                fullProductData.product_details,
+                marketplaceInfo
+            );
+        }
+    }
+
+    console.log(`Offscreen: Successfully parsed ${url}`);
+    return fullProductData;
+}

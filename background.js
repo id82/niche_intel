@@ -365,224 +365,150 @@ function isExtractionFailed(data) {
     return nullFields >= failureThreshold;
 }
 
-// Process a single ASIN with retry logic
-async function processSingleAsin(asin, domain, maxRetries = 2) {
-    let attempt = 0;
-    let deepDiveData = null;
-    
-    while (attempt <= maxRetries) {
-        let backgroundTabId = null;
-        attempt++;
-        
-        try {
-            console.log(`background.js: Processing ASIN: ${asin} (attempt ${attempt}/${maxRetries + 1})`);
-            
-            // Add delay for retries (exponential backoff)
-            if (attempt > 1) {
-                const delay = Math.pow(2, attempt - 2) * 1000; // 1s, 2s, 4s...
-                console.log(`background.js: Waiting ${delay}ms before retry for ASIN: ${asin}`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
+// ========================================================================
+// START: New Offscreen-based Scraping Architecture
+// ========================================================================
 
-            // Create a new, inactive tab for the product page in the same window
-            const productUrl = `https://${domain}/dp/${asin}`;
-            console.log(`background.js: Creating background tab for ${productUrl}`);
-            
-            // Find the correct window - prioritize incognito if we're in incognito context
-            const windows = await chrome.windows.getAll({ populate: false, windowTypes: ['normal'] });
-            const reportWindow = await chrome.windows.get(
-                (await chrome.tabs.query({ active: true, currentWindow: true }))[0].windowId
-            );
-            
-            const backgroundTab = await chrome.tabs.create({ 
-                url: productUrl, 
-                active: false,
-                windowId: reportWindow.id
-            });
-            backgroundTabId = backgroundTab.id;
-            monitoredTabs.add(backgroundTabId);
+let offscreenDocumentPath = 'offscreen.html';
 
-            // Wait for the tab to be fully loaded before injecting script, with a timeout
-            await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    chrome.tabs.onUpdated.removeListener(listener);
-                    reject(new Error(`Tab ${backgroundTabId} timed out while loading.`));
-                }, 15000); // 15 seconds timeout
-
-                const listener = (tabId, changeInfo, tab) => {
-                    if (tabId === backgroundTabId && changeInfo.status === 'complete' && tab.url.startsWith('http')) {
-                        console.log(`background.js: Tab ${backgroundTabId} loaded successfully.`);
-                        clearTimeout(timeout);
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve();
-                    }
-                };
-                chrome.tabs.onUpdated.addListener(listener);
-            });
-            
-            // Inject scrapers and run the deep-dive extraction
-            console.log(`background.js: Injecting scrapers.js into background tab ${backgroundTabId}`);
-            await chrome.scripting.executeScript({
-                target: { tabId: backgroundTabId },
-                files: ['scrapers.js']
-            });
-            console.log(`background.js: Executing runFullProductPageExtraction in background tab ${backgroundTabId}`);
-            const injectionResults = await chrome.scripting.executeScript({
-                target: { tabId: backgroundTabId },
-                func: () => runFullProductPageExtraction(),
-            });
-            
-            deepDiveData = injectionResults[0].result;
-            console.log(`background.js: Successfully extracted deep-dive data for ASIN ${asin}.`);
-            
-            // Check if extraction appears to have failed
-            if (isExtractionFailed(deepDiveData)) {
-                console.warn(`background.js: Extraction appears incomplete for ASIN ${asin} (attempt ${attempt})`);
-                if (attempt <= maxRetries) {
-                    // Clean up current tab and continue retry loop
-                    if (backgroundTabId) {
-                        monitoredTabs.delete(backgroundTabId);
-                        await chrome.tabs.remove(backgroundTabId);
-                        backgroundTabId = null;
-                    }
-                    continue; // Try again
-                } else {
-                    console.error(`background.js: Max retries reached for ASIN ${asin}, using incomplete data`);
-                }
-            }
-            
-            // Success - exit retry loop
-            break;
-
-        } catch (e) {
-            console.error(`background.js: Failed to process ASIN ${asin} (attempt ${attempt}):`, e);
-            deepDiveData = { error: `Failed to scrape page for ASIN ${asin}: ${e.message}` };
-            
-            if (attempt > maxRetries) {
-                console.error(`background.js: Max retries reached for ASIN ${asin}`);
-                break; // Exit retry loop
-            }
-        
-        } finally {
-            // Clean up by closing the background tab
-            if (backgroundTabId) {
-                console.log(`background.js: Closing background tab ${backgroundTabId} after scraping (attempt ${attempt}).`);
-                monitoredTabs.delete(backgroundTabId);
-                try {
-                    await chrome.tabs.remove(backgroundTabId);
-                } catch (tabError) {
-                    console.warn(`background.js: Failed to close tab ${backgroundTabId}: ${tabError.message}`);
-                }
-                backgroundTabId = null;
-            }
-        }
+// Offscreen Document Management
+async function hasOffscreenDocument() {
+    if ('getContexts' in chrome.runtime) {
+        const contexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
+        return contexts.length > 0;
     }
-    
-    return deepDiveData;
+    return false;
 }
 
-async function processAsinQueue(asins, reportTabId, domain) {
-    console.log("background.js: Starting to process ASIN queue:", asins);
-
-    const BATCH_SIZE = 5; // Process 5 ASINs concurrently
-    const batches = [];
-    
-    // Split ASINs into batches
-    for (let i = 0; i < asins.length; i += BATCH_SIZE) {
-        batches.push(asins.slice(i, i + BATCH_SIZE));
+async function createOffscreenDocument() {
+    if (await hasOffscreenDocument()) {
+        console.log("background.js: Offscreen document already exists.");
+        return;
     }
-    
-    console.log(`background.js: Processing ${asins.length} ASINs in ${batches.length} batches of up to ${BATCH_SIZE}`);
+    console.log("background.js: Creating offscreen document.");
+    await chrome.offscreen.createDocument({
+        url: offscreenDocumentPath,
+        reasons: [chrome.offscreen.Reason.DOM_PARSER],
+        justification: 'To parse HTML from fetched Amazon product pages.',
+    });
+}
 
-    // Process each batch concurrently
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-        // Check if analysis should be stopped
-        if (shouldStopAnalysis) {
-            console.log("background.js: Analysis stopped by user. Terminating batch processing.");
-            break;
-        }
-        
-        const batch = batches[batchIndex];
-        console.log(`background.js: Processing batch ${batchIndex + 1}/${batches.length} with ASINs:`, batch);
-        
-        // Process all ASINs in this batch concurrently with staggered delays
-        const batchPromises = batch.map(async (asin, index) => {
-            try {
-                // Add staggered delay to avoid overwhelming servers (0ms, 200ms, 400ms, 600ms, 800ms)
-                if (index > 0) {
-                    const delay = index * 200; // 200ms between each tab in batch
-                    console.log(`background.js: Staggered delay of ${delay}ms for ASIN ${asin}`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-                
-                const deepDiveData = await processSingleAsin(asin, domain);
-                console.log(`background.js: Extracted data for ASIN ${asin}:`, deepDiveData);
-                
-                // Send update to report tab immediately when ready
-                if (reportTabId) {
-                    console.log(`background.js: Sending 'update-row' message for ASIN ${asin} to report tab ${reportTabId}.`);
-                    const messageResult = await chrome.tabs.sendMessage(reportTabId, {
-                        command: "update-row",
-                        asin: asin,
-                        data: deepDiveData
-                    }).catch(err => {
-                        console.error(`background.js: Failed to send message to report tab: ${err.message}`);
-                        return null;
-                    });
-                    console.log(`background.js: Message sent result for ASIN ${asin}:`, messageResult);
-                }
-                
-                return { asin, success: true, data: deepDiveData };
-            } catch (error) {
-                console.error(`background.js: Batch processing failed for ASIN ${asin}:`, error);
-                
-                // Send error data to report tab
-                if (reportTabId) {
-                    chrome.tabs.sendMessage(reportTabId, {
-                        command: "update-row",
-                        asin: asin,
-                        data: { error: `Batch processing failed: ${error.message}` }
-                    }).catch(err => console.warn(`background.js: Could not send error message to report tab: ${err.message}`));
-                }
-                
-                return { asin, success: false, error: error.message };
+async function closeOffscreenDocument() {
+    if (await hasOffscreenDocument()) {
+        console.log("background.js: Closing offscreen document.");
+        await chrome.offscreen.closeDocument();
+    }
+}
+
+// Fetches HTML and sends it to the offscreen document for parsing
+async function fetchAndParse(url, asin) {
+    console.log(`background.js: Fetching ${url}`);
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP error for ${asin}: ${response.status}`);
+    }
+    const html = await response.text();
+
+    console.log(`background.js: Sending HTML for ${asin} to be parsed.`);
+    // Send HTML string to offscreen document for parsing
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+            command: 'parse-product-page-html',
+            html: html,
+            url: url
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                return reject(new Error(chrome.runtime.lastError.message));
+            }
+            if (response.success) {
+                resolve(response.data);
+            } else {
+                reject(new Error(response.error || `Unknown error parsing ${asin}`));
             }
         });
-        
-        // Wait for all ASINs in this batch to complete
-        const batchResults = await Promise.allSettled(batchPromises);
-        
-        // Log batch completion
-        const successful = batchResults.filter(result => result.status === 'fulfilled' && result.value.success).length;
-        const failed = batch.length - successful;
-        console.log(`background.js: Batch ${batchIndex + 1} completed. Success: ${successful}, Failed: ${failed}`);
-        
-        // Small delay between batches to be respectful to servers
-        if (batchIndex < batches.length - 1) {
-            console.log("background.js: Waiting 1 second before next batch...");
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-
-    // 6. Send completion message after the loop finishes
-    analysisInProgress = false;
-    
-    // Disable resource blocking after analysis completion
-    await disableResourceBlocking();
-    
-    const completionMessage = shouldStopAnalysis ? "Analysis stopped by user." : "All ASINs processed.";
-    console.log(`background.js: ${completionMessage}`);
-    
-    if (reportTabId) {
-        console.log(`background.js: Sending 'analysis-complete' message to report tab ${reportTabId}.`);
-        chrome.tabs.sendMessage(reportTabId, { 
-            command: "analysis-complete",
-            stopped: shouldStopAnalysis 
-        }).catch(err => console.warn(`background.js: Could not send completion message to report tab: ${err.message}`));
-    }
-    console.log("background.js: Cleaning up local storage.");
-    chrome.storage.local.remove(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']); // Clean up storage
+    });
 }
+
+// Finalization logic, called when the queue is empty
+async function finalizeAnalysis(reportTabId) {
+    console.log("background.js: All ASINs processed. Finalizing...");
+    
+    analysisInProgress = false;
+    await disableResourceBlocking();
+    await closeOffscreenDocument();
+
+    if (reportTabId) {
+        chrome.tabs.sendMessage(reportTabId, {
+            command: "analysis-complete",
+            stopped: shouldStopAnalysis
+        }).catch(err => console.warn(`Could not send completion message: ${err.message}`));
+    }
+    
+    console.log("background.js: Cleaning up local storage.");
+    chrome.storage.local.remove(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']);
+}
+
+// Main Queue Processing Logic
+async function processAsinQueue(asins, reportTabId, domain) {
+    console.log("background.js: Starting to process ASIN queue with Offscreen Document:", asins);
+    
+    await createOffscreenDocument();
+
+    const BATCH_SIZE = 5; // How many fetch requests to have in-flight at once
+    let activeRequests = 0;
+    let asinsToProcess = [...asins];
+
+    const processNext = async () => {
+        if (shouldStopAnalysis) {
+            console.log("background.js: Analysis stopped by user.");
+            return;
+        }
+
+        if (asinsToProcess.length === 0 && activeRequests === 0) {
+            // All done, finalize the analysis
+            await finalizeAnalysis(reportTabId);
+            return;
+        }
+        
+        while (asinsToProcess.length > 0 && activeRequests < BATCH_SIZE) {
+            activeRequests++;
+            const asin = asinsToProcess.shift();
+            const productUrl = `https://${domain}/dp/${asin}`;
+
+            fetchAndParse(productUrl, asin)
+                .then(data => {
+                    // Send data to the report tab
+                    if (reportTabId) {
+                        chrome.tabs.sendMessage(reportTabId, {
+                            command: "update-row",
+                            asin: asin,
+                            data: data
+                        }).catch(err => console.error(`Failed to send update for ${asin}:`, err));
+                    }
+                })
+                .catch(error => {
+                     // Send error to the report tab
+                    if (reportTabId) {
+                        chrome.tabs.sendMessage(reportTabId, {
+                            command: "update-row",
+                            asin: asin,
+                            data: { error: error.message }
+                        }).catch(err => console.error(`Failed to send error for ${asin}:`, err));
+                    }
+                })
+                .finally(() => {
+                    activeRequests--;
+                    processNext(); // Kick off the next item in the queue
+                });
+        }
+    };
+    
+    await processNext(); // Start the first batch
+}
+
+// ========================================================================
+// END: New Offscreen-based Scraping Architecture
+// ========================================================================
 
 // Handle manual tab closures by users
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
