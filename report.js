@@ -968,10 +968,11 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         return daysOnMarket !== null && daysOnMarket !== undefined && daysOnMarket <= 90;
     }).length;
     
-    // Update the high royalty count with recent books info
+    // Update the high royalty count with recent books info and total count
+    const totalBooks = allData.length;
     const countText = highTotals.totalProducts > 0
-        ? `${highTotals.totalProducts} books (${recentBooksCount} with <90 days on market)`
-        : '0 books';
+        ? `${highTotals.totalProducts}/${totalBooks} books (${recentBooksCount} with <90 days on market)`
+        : `0/${totalBooks} books`;
     document.getElementById('high-royalty-count').textContent = countText;
     
     // Calculate final values
