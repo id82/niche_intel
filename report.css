@@ -513,6 +513,8 @@ tfoot td {
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
+    text-align: center;
+    justify-content: center;
 }
 
 #totals-row td:nth-child(6) { /* Formats */
@@ -627,6 +629,8 @@ tfoot td {
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
+    text-align: center;
+    justify-content: center;
 }
 
 #high-royalty-totals-row td:nth-child(6) { /* Formats */
