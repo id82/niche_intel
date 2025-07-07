@@ -85,12 +85,13 @@ body {
 }
 
 #table-container {
-    overflow-x: auto;
+    overflow: auto;
     background-color: white;
     margin: 20px;
     max-height: calc(100vh - 240px);
-    overflow-y: auto;
     position: relative;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
 table {
@@ -99,7 +100,6 @@ table {
     background-color: white;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
 th, td {
@@ -117,13 +117,15 @@ th {
     font-weight: 600;
     text-align: center;
     text-transform: uppercase;
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 0.5px;
-    padding: 16px 12px;
+    padding: 12px 8px;
     position: sticky;
     top: 0;
     z-index: 100;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    white-space: nowrap;
+    line-height: 1.2;
 }
 
 /* Keep Title & Author header left aligned */
@@ -259,6 +261,17 @@ tfoot {
     box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
 }
 
+tfoot tr {
+    height: auto;
+}
+
+tfoot td {
+    padding: 8px 12px !important;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
 /* Right align all numeric cells in totals row */
 #totals-row {
     background-color: white !important;
@@ -269,7 +282,6 @@ tfoot {
 #totals-row td {
     text-align: center;
     border-bottom: none;
-    padding: 16px 12px;
 }
 
 /* Keep the first column (label) left aligned in totals row */
@@ -289,7 +301,6 @@ tfoot {
 #high-royalty-totals-row td {
     text-align: center;
     border-bottom: none;
-    padding: 16px 12px;
 }
 
 /* Keep the first column (label) left aligned in high royalty totals row */
