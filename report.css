@@ -245,7 +245,7 @@ th:nth-child(n+6), td:nth-child(n+6) {
 
 /* Right align all numeric cells in totals row */
 #totals-row {
-    background-color: #3b82f6 !important;
+    background-color: #374B6D !important;
     color: white;
     font-weight: 600;
 }
@@ -263,10 +263,10 @@ th:nth-child(n+6), td:nth-child(n+6) {
 
 /* Styling for high royalty totals row */
 #high-royalty-totals-row {
-    background-color: #10b981 !important;
-    color: white;
+    background-color: #6A86B4 !important;
+    color: black;
     font-weight: 600;
-    border-top: 2px solid #059669;
+    border-top: 2px solid #374B6D;
 }
 
 /* Right align all numeric cells in high royalty totals row */
