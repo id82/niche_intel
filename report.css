@@ -88,6 +88,9 @@ body {
     overflow-x: auto;
     background-color: white;
     margin: 20px;
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    position: relative;
 }
 
 table {
@@ -117,6 +120,10 @@ th {
     font-size: 12px;
     letter-spacing: 0.5px;
     padding: 16px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Keep Title & Author header left aligned */
@@ -241,6 +248,15 @@ tbody tr:hover {
 /* Center align columns from Reviews onwards */
 th:nth-child(n+6), td:nth-child(n+6) {
     text-align: center;
+}
+
+/* Sticky footer for totals */
+tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 99;
+    background-color: white;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
 }
 
 /* Right align all numeric cells in totals row */
