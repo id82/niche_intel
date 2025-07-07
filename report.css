@@ -133,6 +133,7 @@ thead {
 
 thead tr {
     display: flex;
+    align-items: center;
 }
 
 th {
@@ -148,11 +149,14 @@ th {
     line-height: 1.2;
     flex: 1;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Keep Title & Author header left aligned */
 th:nth-child(4) {
-    text-align: left;
+    justify-content: flex-start;
 }
 
 /* ASIN styling with monospace font */
@@ -199,6 +203,7 @@ th:nth-child(4) {
 /* All other table cells center aligned except totals labels */
 td {
     text-align: center;
+    vertical-align: middle;
 }
 
 /* Keep title & author content left aligned */
@@ -288,12 +293,14 @@ tbody {
 
 tbody tr {
     display: flex;
+    align-items: center;
     transition: all 0.3s ease;
 }
 
 tbody td {
     flex: 1;
     min-width: 0;
+    padding: 16px 12px;
 }
 
 /* Sticky footer for totals */
@@ -305,6 +312,7 @@ tfoot {
 
 tfoot tr {
     display: flex;
+    align-items: center;
 }
 
 tfoot td {
@@ -314,6 +322,9 @@ tfoot td {
     line-height: 1.2;
     flex: 1;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Right align all numeric cells in totals row */
@@ -330,7 +341,7 @@ tfoot td {
 
 /* Keep the first column (label) left aligned in totals row */
 #totals-row td:first-child {
-    text-align: left;
+    justify-content: flex-start;
 }
 
 /* Styling for high royalty totals row */
@@ -349,7 +360,7 @@ tfoot td {
 
 /* Keep the first column (label) left aligned in high royalty totals row */
 #high-royalty-totals-row td:first-child {
-    text-align: left;
+    justify-content: flex-start;
 }
 
 /* Ensure header buttons are visible */
