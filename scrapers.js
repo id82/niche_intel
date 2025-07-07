@@ -1170,7 +1170,30 @@ function runFullProductPageExtraction() {
              console.log(`scrapers.js: Profitability calculation skipped for non-supported format: "${currentFormat.formatName}"`);
         }
     } else {
-        console.warn("Could not determine the currently selected format on the page.");
+        console.warn("scrapers.js: Could not determine the currently selected format on the page.");
+        console.log("scrapers.js: Available formats:", fullProductData.formats);
+        
+        // Fallback: try to use the first available format if any exist
+        if (fullProductData.formats && fullProductData.formats.length > 0) {
+            const fallbackFormat = fullProductData.formats[0];
+            const formatNameLower = fallbackFormat.formatName.toLowerCase();
+            console.log(`scrapers.js: Using fallback format: "${fallbackFormat.formatName}"`);
+            
+            if (formatNameLower.includes('paperback') || formatNameLower.includes('hardcover') || 
+                formatNameLower.includes('kindle') || formatNameLower.includes('ebook')) {
+                console.log(`scrapers.js: Calculating royalties for fallback ${formatNameLower} format`);
+                fullProductData.royalties = calculateRoyaltyAndSales(
+                    fallbackFormat,
+                    fullProductData.product_details,
+                    getMarketplaceInfo()
+                );
+                console.log(`scrapers.js: Fallback royalty calculation result:`, fullProductData.royalties);
+            } else {
+                console.log(`scrapers.js: Fallback format also not supported: "${fallbackFormat.formatName}"`);
+            }
+        } else {
+            console.error("scrapers.js: No formats found at all for this product");
+        }
     }
     
     console.log("✅ Extraction Complete!");
@@ -1694,6 +1717,28 @@ function parseProductPageFromHTML(htmlString, url) {
     } else {
         console.warn("Offscreen: Could not determine the currently selected format on the page.");
         console.log("Offscreen: Available formats:", fullProductData.formats);
+        
+        // Fallback: try to use the first available format if any exist
+        if (fullProductData.formats && fullProductData.formats.length > 0) {
+            const fallbackFormat = fullProductData.formats[0];
+            const formatNameLower = fallbackFormat.formatName.toLowerCase();
+            console.log(`Offscreen: Using fallback format: "${fallbackFormat.formatName}"`);
+            
+            if (formatNameLower.includes('paperback') || formatNameLower.includes('hardcover') || 
+                formatNameLower.includes('kindle') || formatNameLower.includes('ebook')) {
+                console.log(`Offscreen: Calculating royalties for fallback ${formatNameLower} format`);
+                fullProductData.royalties = _calculateRoyaltyAndSales(
+                    fallbackFormat,
+                    fullProductData.product_details,
+                    marketplaceInfo
+                );
+                console.log(`Offscreen: Fallback royalty calculation result:`, fullProductData.royalties);
+            } else {
+                console.log(`Offscreen: Fallback format also not supported: "${fallbackFormat.formatName}"`);
+            }
+        } else {
+            console.error("Offscreen: No formats found at all for this product");
+        }
     }
 
     console.log(`Offscreen: Successfully parsed ${url}`);
