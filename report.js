@@ -1061,6 +1061,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Filter functionality
     setupFilterFunctionality();
+    
+    // Scroll synchronization
+    setupScrollSynchronization();
 });
 
 function copyAsinsToClipboard() {
@@ -1602,6 +1605,13 @@ function buildActiveFilters() {
         filters.reviewImages = { min: reviewImagesMin, max: reviewImagesMax };
     }
     
+    // Formats filters
+    const formatsMin = parseInt(document.getElementById('formatsMin').value);
+    const formatsMax = parseInt(document.getElementById('formatsMax').value);
+    if (!isNaN(formatsMin) || !isNaN(formatsMax)) {
+        filters.formats = { min: formatsMin, max: formatsMax };
+    }
+    
     // BSR filters
     const bsrMin = parseInt(document.getElementById('bsrMin').value);
     const bsrMax = parseInt(document.getElementById('bsrMax').value);
@@ -1669,6 +1679,7 @@ function passesAllFilters(row) {
     if (activeFilters.reviews && !passesNumericalFilter(row, 6, activeFilters.reviews)) return false;
     if (activeFilters.rating && !passesNumericalFilter(row, 7, activeFilters.rating)) return false;
     if (activeFilters.reviewImages && !passesNumericalFilter(row, 8, activeFilters.reviewImages)) return false;
+    if (activeFilters.formats && !passesNumericalFilter(row, 9, activeFilters.formats)) return false;
     if (activeFilters.bsr && !passesNumericalFilter(row, 10, activeFilters.bsr)) return false;
     if (activeFilters.daysMarket && !passesNumericalFilter(row, 11, activeFilters.daysMarket)) return false;
     if (activeFilters.length && !passesNumericalFilter(row, 12, activeFilters.length)) return false;
@@ -1745,5 +1756,32 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// Scroll synchronization between filter container and table
+function setupScrollSynchronization() {
+    const filterContainer = document.getElementById('filter-container');
+    const tableContainer = document.getElementById('table-container');
+    
+    let isFilterScrolling = false;
+    let isTableScrolling = false;
+    
+    // Sync filter scroll to table scroll
+    filterContainer.addEventListener('scroll', function() {
+        if (!isTableScrolling) {
+            isFilterScrolling = true;
+            tableContainer.scrollLeft = this.scrollLeft;
+            setTimeout(() => { isFilterScrolling = false; }, 10);
+        }
+    });
+    
+    // Sync table scroll to filter scroll
+    tableContainer.addEventListener('scroll', function() {
+        if (!isFilterScrolling) {
+            isTableScrolling = true;
+            filterContainer.scrollLeft = this.scrollLeft;
+            setTimeout(() => { isTableScrolling = false; }, 10);
+        }
+    });
 }
 

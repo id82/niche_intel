@@ -41,7 +41,9 @@
         </div>
     </div>
     <div id="filter-container" class="filter-container" style="display: none;">
-        <div></div> <!-- Skip first 5 columns -->
+        <div class="filter-guidance">
+            <span>Filter books by setting Min/Max values or selecting Yes/No options. Use "Clear All" to reset.</span>
+        </div> <!-- Guidance text for first 5 columns -->
         <div>
             <input type="number" id="priceMin" class="filter-input" placeholder="Min" step="0.01">
             <input type="number" id="priceMax" class="filter-input" placeholder="Max" step="0.01">
@@ -58,7 +60,10 @@
             <input type="number" id="reviewImagesMin" class="filter-input" placeholder="Min" step="1">
             <input type="number" id="reviewImagesMax" class="filter-input" placeholder="Max" step="1">
         </div>
-        <div></div> <!-- Skip Formats column -->
+        <div>
+            <input type="number" id="formatsMin" class="filter-input" placeholder="Min" step="1">
+            <input type="number" id="formatsMax" class="filter-input" placeholder="Max" step="1">
+        </div>
         <div>
             <input type="number" id="bsrMin" class="filter-input" placeholder="Min" step="1">
             <input type="number" id="bsrMax" class="filter-input" placeholder="Max" step="1">
