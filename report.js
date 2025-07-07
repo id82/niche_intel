@@ -1775,29 +1775,44 @@ function setupScrollSynchronization() {
     }
     
     console.log('Setting up scroll synchronization');
+    console.log('Filter container:', filterContainer);
+    console.log('Table container:', tableContainer);
     
     let isFilterScrolling = false;
     let isTableScrolling = false;
     
     // Sync filter scroll to table scroll
-    filterContainer.addEventListener('scroll', function() {
+    filterContainer.addEventListener('scroll', function(e) {
         if (!isTableScrolling) {
             isFilterScrolling = true;
             tableContainer.scrollLeft = this.scrollLeft;
-            console.log('Filter scrolled to:', this.scrollLeft);
+            console.log('Filter scrolled to:', this.scrollLeft, 'syncing table to:', tableContainer.scrollLeft);
             setTimeout(() => { isFilterScrolling = false; }, 50);
         }
     });
     
     // Sync table scroll to filter scroll
-    tableContainer.addEventListener('scroll', function() {
+    tableContainer.addEventListener('scroll', function(e) {
         if (!isFilterScrolling) {
             isTableScrolling = true;
             filterContainer.scrollLeft = this.scrollLeft;
-            console.log('Table scrolled to:', this.scrollLeft);
+            console.log('Table scrolled to:', this.scrollLeft, 'syncing filter to:', filterContainer.scrollLeft);
             setTimeout(() => { isTableScrolling = false; }, 50);
         }
     });
+    
+    // Test if containers are actually scrollable
+    setTimeout(() => {
+        console.log('Filter container scrollWidth:', filterContainer.scrollWidth, 'clientWidth:', filterContainer.clientWidth);
+        console.log('Table container scrollWidth:', tableContainer.scrollWidth, 'clientWidth:', tableContainer.clientWidth);
+        
+        // Test scroll
+        console.log('Testing scroll: setting table scrollLeft to 100');
+        tableContainer.scrollLeft = 100;
+        setTimeout(() => {
+            console.log('After test scroll - Table scrollLeft:', tableContainer.scrollLeft, 'Filter scrollLeft:', filterContainer.scrollLeft);
+        }, 100);
+    }, 200);
     
     scrollSyncInitialized = true;
     console.log('Scroll synchronization initialized');
