@@ -122,8 +122,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 progressContainer.style.overflow = 'hidden';
             }, 3000);
             
+            console.log("report.js: Analysis complete, calculating totals for", allData.length, "products");
             calculateAndDisplayTotals(allData); // Calculate and display totals
+            console.log("report.js: Regular totals calculated, now calculating high royalty totals");
             calculateAndDisplayHighRoyaltyTotals(allData); // Calculate and display high royalty totals
+            console.log("report.js: All totals calculation complete");
             
             // Show export button
             document.getElementById('exportData').style.display = 'inline-block';
@@ -599,7 +602,8 @@ function updateTableRow(asin, data) {
     
     const royaltyUnitCell = document.getElementById(`royalty-unit-${asin}`);
     if (royaltyUnitCell) {
-        if(data.royalties && data.royalties.error) {
+        // Show fallback calculation results even if there was an error in complex calculation
+        if(data.royalties && data.royalties.error && (royaltyUnit === null || royaltyUnit === undefined)) {
             royaltyUnitCell.textContent = 'N/A';
         } else {
             royaltyUnitCell.textContent = royaltyUnit !== null ? `$${royaltyUnit.toFixed(2)}` : 'N/A';
@@ -609,7 +613,8 @@ function updateTableRow(asin, data) {
 
     const royaltyMonthCell = document.getElementById(`royalty-month-${asin}`);
     if (royaltyMonthCell) {
-        if(data.royalties && data.royalties.error) {
+        // Show fallback calculation results even if there was an error in complex calculation
+        if(data.royalties && data.royalties.error && (royaltyMonth === null || royaltyMonth === undefined)) {
             royaltyMonthCell.textContent = 'N/A';
         } else {
             royaltyMonthCell.textContent = royaltyMonth !== null ? `$${Math.round(royaltyMonth).toLocaleString()}` : 'N/A';
@@ -763,14 +768,43 @@ function calculateAndDisplayTotals(allData) {
 }
 
 function calculateAndDisplayHighRoyaltyTotals(allData) {
+    console.log("report.js: Starting calculateAndDisplayHighRoyaltyTotals with data:", allData.length, "products");
     const get = (p, o) => p.reduce((xs, x) => (xs && xs[x] !== undefined && xs[x] !== null) ? xs[x] : null, o);
+    
+    // Debug: Log data structure for first few items
+    allData.slice(0, 3).forEach((data, index) => {
+        console.log(`report.js: Sample data ${index}:`, {
+            hasData: !!data,
+            hasRoyalties: !!(data && data.royalties),
+            royaltiesError: data?.royalties?.error,
+            monthlyRoyalty: get(['royalties', 'monthly_royalty'], data),
+            royaltyPerUnit: get(['royalties', 'royalty_per_unit'], data),
+            fullRoyaltiesObject: data?.royalties
+        });
+    });
     
     // Filter for books with monthly royalty >= $500
     const highRoyaltyBooks = allData.filter(data => {
-        if (!data || !data.royalties || data.royalties.error) return false;
+        if (!data || !data.royalties) {
+            return false;
+        }
+        
+        // Check if we have valid royalty data, even if there was an error in complex calculation
         const royaltyMonth = get(['royalties', 'monthly_royalty'], data);
-        return royaltyMonth !== null && royaltyMonth !== undefined && royaltyMonth >= 500;
+        
+        // Only exclude if there's an error AND no valid monthly royalty
+        if (data.royalties.error && (royaltyMonth === null || royaltyMonth === undefined)) {
+            return false;
+        }
+        
+        const isHighRoyalty = royaltyMonth !== null && royaltyMonth !== undefined && royaltyMonth >= 500;
+        if (isHighRoyalty) {
+            console.log(`report.js: Found high royalty book with $${royaltyMonth}/month:`, data.asin || 'unknown', data.royalties.error ? '(from fallback calc)' : '(from full calc)');
+        }
+        return isHighRoyalty;
     });
+    
+    console.log(`report.js: Found ${highRoyaltyBooks.length} high royalty books (≥$500/month)`);
     
     const highTotals = {
         reviewsSum: 0,
@@ -903,18 +937,57 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
         : '0 books';
     document.getElementById('high-royalty-count').textContent = countText;
     
+    // Calculate final values
+    const avgPrice = highTotals.priceCount > 0 ? `$${(highTotals.priceSum / highTotals.priceCount).toFixed(2)}` : '$0.00';
+    const avgReviews = highTotals.reviewsCount > 0 ? Math.round(highTotals.reviewsSum / highTotals.reviewsCount).toLocaleString() : '0';
+    const avgRating = highTotals.ratingCount > 0 ? (highTotals.ratingSum / highTotals.ratingCount).toFixed(2) : '0.00';
+    const avgReviewImages = highTotals.reviewImagesCount > 0 ? Math.round(highTotals.reviewImagesSum / highTotals.reviewImagesCount).toLocaleString() : '0';
+    const avgBsr = highTotals.bsrCount > 0 ? Math.round(highTotals.bsrSum / highTotals.bsrCount).toLocaleString() : 'N/A';
+    const avgDays = highTotals.daysCount > 0 ? Math.round(highTotals.daysSum / highTotals.daysCount).toLocaleString() : 'N/A';
+    const avgLength = highTotals.lengthCount > 0 ? Math.round(highTotals.lengthSum / highTotals.lengthCount).toLocaleString() : 'N/A';
+    const avgAplus = highTotals.aplusCount > 0 ? (highTotals.aplusSum / highTotals.aplusCount).toFixed(1) : '0.0';
+    const avgUgc = highTotals.ugcCount > 0 ? (highTotals.ugcVideos / highTotals.ugcCount).toFixed(1) : '0.0';
+    const avgRoyaltyUnit = highTotals.royaltyUnitCount > 0 ? `$${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : '$0.00';
+    const avgRoyaltyMonth = highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum / highTotals.royaltyMonthCount).toLocaleString()}` : '$0';
+
+    console.log("report.js: High Royalty totals calculated:", {
+        totalProducts: highTotals.totalProducts,
+        avgPrice,
+        avgReviews,
+        avgRating,
+        avgBsr,
+        avgRoyaltyUnit,
+        avgRoyaltyMonth,
+        royaltyUnitCount: highTotals.royaltyUnitCount,
+        royaltyMonthCount: highTotals.royaltyMonthCount
+    });
+
     // Update all the high royalty totals
-    document.getElementById('high-avg-price').textContent = (highTotals.priceCount > 0 ? `$${(highTotals.priceSum / highTotals.priceCount).toFixed(2)}` : '$0.00');
-    document.getElementById('high-total-reviews').textContent = (highTotals.reviewsCount > 0 ? Math.round(highTotals.reviewsSum / highTotals.reviewsCount).toLocaleString() : '0');
-    document.getElementById('high-avg-rating').textContent = (highTotals.ratingCount > 0 ? (highTotals.ratingSum / highTotals.ratingCount).toFixed(2) : '0.00');
-    document.getElementById('high-total-review-images').textContent = (highTotals.reviewImagesCount > 0 ? Math.round(highTotals.reviewImagesSum / highTotals.reviewImagesCount).toLocaleString() : '0');
-    document.getElementById('high-avg-bsr').textContent = (highTotals.bsrCount > 0 ? Math.round(highTotals.bsrSum / highTotals.bsrCount).toLocaleString() : 'N/A');
-    document.getElementById('high-avg-days').textContent = (highTotals.daysCount > 0 ? Math.round(highTotals.daysSum / highTotals.daysCount).toLocaleString() : 'N/A');
-    document.getElementById('high-avg-length').textContent = (highTotals.lengthCount > 0 ? Math.round(highTotals.lengthSum / highTotals.lengthCount).toLocaleString() : 'N/A');
-    document.getElementById('high-avg-aplus').textContent = (highTotals.aplusCount > 0 ? (highTotals.aplusSum / highTotals.aplusCount).toFixed(1) : '0.0');
-    document.getElementById('high-avg-ugc-videos').textContent = (highTotals.ugcCount > 0 ? (highTotals.ugcVideos / highTotals.ugcCount).toFixed(1) : '0.0');
-    document.getElementById('high-avg-royalty-unit').textContent = (highTotals.royaltyUnitCount > 0 ? `$${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : '$0.00');
-    document.getElementById('high-total-royalty-month').textContent = (highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum / highTotals.royaltyMonthCount).toLocaleString()}` : '$0');
+    document.getElementById('high-avg-price').textContent = avgPrice;
+    document.getElementById('high-total-reviews').textContent = avgReviews;
+    document.getElementById('high-avg-rating').textContent = avgRating;
+    document.getElementById('high-total-review-images').textContent = avgReviewImages;
+    document.getElementById('high-avg-bsr').textContent = avgBsr;
+    document.getElementById('high-avg-days').textContent = avgDays;
+    document.getElementById('high-avg-length').textContent = avgLength;
+    document.getElementById('high-avg-aplus').textContent = avgAplus;
+    document.getElementById('high-avg-ugc-videos').textContent = avgUgc;
+    document.getElementById('high-avg-royalty-unit').textContent = avgRoyaltyUnit;
+    document.getElementById('high-total-royalty-month').textContent = avgRoyaltyMonth;
+    
+    // Verify that all elements exist before updating
+    const elements = [
+        'high-royalty-count', 'high-avg-price', 'high-total-reviews', 'high-avg-rating',
+        'high-total-review-images', 'high-avg-bsr', 'high-avg-days', 'high-avg-length',
+        'high-avg-aplus', 'high-avg-ugc-videos', 'high-avg-royalty-unit', 'high-total-royalty-month'
+    ];
+    
+    const missingElements = elements.filter(id => !document.getElementById(id));
+    if (missingElements.length > 0) {
+        console.error("report.js: Missing High Royalty elements:", missingElements);
+    } else {
+        console.log("report.js: All High Royalty elements found and updated successfully");
+    }
     
     // New calculations for high royalty books
     const highAvgFormats = highTotals.formatCount > 0 ? (highTotals.formatSum / highTotals.formatCount).toFixed(1) : '0.0';
