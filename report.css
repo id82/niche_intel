@@ -302,6 +302,7 @@ input:checked + .toggle-slider:before {
 
 .filter-input[type=number] {
     -moz-appearance: textfield;
+    appearance: textfield;
     padding: 3px 8px;
 }
 
