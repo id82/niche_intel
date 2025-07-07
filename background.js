@@ -301,9 +301,9 @@ async function startAnalysis(activeTab) {
             return posA - posB;
         });
 
-        // --- TESTING CONSTRAINT: Only process the first 10 ASINs ---
-        const asinsToProcess = sortedAsins.slice(0, 10);
-        console.log(`background.js: Total ASINs found: ${allAsins.length}. Processing first ${asinsToProcess.length} concurrently in batches of 5.`);
+        // Process all available ASINs
+        const asinsToProcess = sortedAsins;
+        console.log(`background.js: Total ASINs found: ${allAsins.length}. Processing all ${asinsToProcess.length} concurrently in batches of 5.`);
 
         // 4. Store initial data and create the report tab
         console.log("background.js: About to store SERP data and ASIN queue in local storage.");

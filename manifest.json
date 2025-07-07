@@ -1,8 +1,8 @@
 {
    "manifest_version":3,
    "name":"NicheIntel Pro by Adigy",
-   "version":"2.26",
-   "description":"Performs Amazon Search Page analysis and deep-dives on the first 10 products for testing.",
+   "version":"1.0",
+   "description":"Performs Amazon Search Page analysis and deep-dives on all products.",
    "permissions":[
       "activeTab",
       "scripting",
