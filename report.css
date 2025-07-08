@@ -437,6 +437,7 @@ input:checked + .toggle-slider:before {
 }
 
 table {
+    width: max-content;
     min-width: 100%;
     background-color: white;
     border-radius: 12px;
@@ -752,20 +753,9 @@ th:nth-child(n+7), td:nth-child(n+7) {
     text-align: center;
 }
 
-.tbody-wrapper {
-    flex: 1; /* Takes the place of tbody in filling vertical space */
-    position: relative; /* Crucial: This becomes the positioning anchor for the tbody */
-    overflow: hidden; /* Hides any weird overflow from the wrapper itself */
-}
-
 tbody {
-    position: absolute; /* Positioned relative to the new wrapper */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto; /* This now works perfectly inside the wrapper */
-    overflow-x: hidden; /* Important: Prevent tbody from having its own horizontal scrollbar */
+    flex: 1;
+    overflow-y: auto;
 }
 
 tbody tr {
