@@ -457,6 +457,9 @@ th, td {
 thead {
     flex-shrink: 0;
     background-color: #1e293b;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 thead tr {
@@ -778,6 +781,9 @@ tfoot {
     flex-shrink: 0;
     background-color: white;
     box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
 }
 
 tfoot tr {
