@@ -1,9 +1,11 @@
 {
   "scripts": {
     "build": "webpack --mode=production",
-    "dev": "webpack --mode=development --watch"
+    "dev": "webpack --mode=development --watch",
+    "package": "npm run build && node create-zip.js"
   },
   "devDependencies": {
+    "archiver": "^7.0.1",
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^6.0.0",
     "css-minimizer-webpack-plugin": "^7.0.2",
