@@ -1801,10 +1801,17 @@ function setupScrollSynchronization() {
     
     const filterContainer = document.getElementById('filter-container');
     const tableContainer = document.getElementById('table-container');
-    const tbody = document.querySelector('tbody');
     const table = document.querySelector('table');
+    const thead = document.querySelector('thead');
+    const tbody = document.querySelector('tbody');
     
-    console.log('report.js: Setting up scroll sync. Filter container found:', !!filterContainer);
+    console.log('report.js: Setting up scroll sync. Elements found:', {
+        filterContainer: !!filterContainer,
+        tableContainer: !!tableContainer,
+        table: !!table,
+        thead: !!thead,
+        tbody: !!tbody
+    });
     
     if (!filterContainer) {
         console.log('report.js: No filter container found, skipping scroll sync');
@@ -1820,35 +1827,16 @@ function setupScrollSynchronization() {
         return;
     }
     
-    // Find the actual scrollable table element with better detection
-    let scrollableTableElement = null;
-    const candidates = [tableContainer, table, tbody];
+    // For flexbox table structure, we need to sync the scroll of the table container
+    // which will affect both thead and tbody simultaneously
+    const scrollableElement = tableContainer;
     
-    for (const candidate of candidates) {
-        if (candidate) {
-            const hasHorizontalScroll = candidate.scrollWidth > candidate.clientWidth;
-            const hasOverflow = window.getComputedStyle(candidate).overflowX !== 'visible';
-            console.log(`report.js: Checking candidate ${candidate.tagName || candidate.id}:`, {
-                scrollWidth: candidate.scrollWidth,
-                clientWidth: candidate.clientWidth,
-                hasHorizontalScroll,
-                hasOverflow,
-                overflowX: window.getComputedStyle(candidate).overflowX
-            });
-            
-            if (hasHorizontalScroll || hasOverflow) {
-                scrollableTableElement = candidate;
-                break;
-            }
-        }
-    }
-    
-    if (!scrollableTableElement) {
-        console.log('report.js: No scrollable table element found');
+    if (!scrollableElement) {
+        console.log('report.js: No table container found for scroll sync');
         return;
     }
     
-    console.log('report.js: Using scrollable element:', scrollableTableElement.tagName || scrollableTableElement.id);
+    console.log('report.js: Setting up sync between filter container and table container');
     
     let isFilterScrolling = false;
     let isTableScrolling = false;
@@ -1859,7 +1847,28 @@ function setupScrollSynchronization() {
     const filterScrollHandler = function(e) {
         if (!isTableScrolling) {
             isFilterScrolling = true;
-            scrollableTableElement.scrollLeft = this.scrollLeft;
+            
+            const scrollLeft = this.scrollLeft;
+            console.log('report.js: Filter scrolled to:', scrollLeft);
+            
+            // Try multiple approaches to sync the table scroll
+            // 1. Set scrollLeft on table container
+            if (scrollableElement) {
+                scrollableElement.scrollLeft = scrollLeft;
+            }
+            
+            // 2. Set scrollLeft on table element
+            if (table) {
+                table.scrollLeft = scrollLeft;
+            }
+            
+            // 3. Use transform for flexbox tables (more reliable for flex layouts)
+            if (thead) {
+                thead.style.transform = `translateX(-${scrollLeft}px)`;
+            }
+            if (tbody) {
+                tbody.style.transform = `translateX(-${scrollLeft}px)`;
+            }
             
             // Clear existing timeout and set new one
             if (filterScrollTimeout) clearTimeout(filterScrollTimeout);
@@ -1874,7 +1883,12 @@ function setupScrollSynchronization() {
     const tableScrollHandler = function(e) {
         if (!isFilterScrolling) {
             isTableScrolling = true;
-            filterContainer.scrollLeft = this.scrollLeft;
+            const scrollLeft = this.scrollLeft;
+            
+            console.log('report.js: Table scrolled to:', scrollLeft);
+            
+            // Update filter container scroll
+            filterContainer.scrollLeft = scrollLeft;
             
             // Clear existing timeout and set new one
             if (tableScrollTimeout) clearTimeout(tableScrollTimeout);
@@ -1885,9 +1899,19 @@ function setupScrollSynchronization() {
         }
     };
     
-    // Add event listeners and store references for cleanup
+    // Add event listeners to both filter container and table container
     filterContainer.addEventListener('scroll', filterScrollHandler);
-    scrollableTableElement.addEventListener('scroll', tableScrollHandler);
+    scrollableElement.addEventListener('scroll', tableScrollHandler);
+    
+    // Also add listeners to tbody in case it has independent scrolling
+    if (tbody && tbody !== scrollableElement) {
+        tbody.addEventListener('scroll', tableScrollHandler);
+        scrollSyncListeners.push({
+            element: tbody,
+            event: 'scroll',
+            handler: tableScrollHandler
+        });
+    }
     
     scrollSyncListeners.push({
         element: filterContainer,
@@ -1896,13 +1920,31 @@ function setupScrollSynchronization() {
     });
     
     scrollSyncListeners.push({
-        element: scrollableTableElement,
+        element: scrollableElement,
         event: 'scroll', 
         handler: tableScrollHandler
     });
     
     scrollSyncInitialized = true;
     console.log('report.js: Scroll synchronization setup complete');
+    
+    // Debug function to test scroll sync manually
+    window.testScrollSync = function(scrollAmount = 100) {
+        console.log('Testing scroll sync with amount:', scrollAmount);
+        if (filterContainer) {
+            filterContainer.scrollLeft = scrollAmount;
+            console.log('Filter container scrollLeft set to:', filterContainer.scrollLeft);
+        }
+        if (scrollableElement) {
+            console.log('Table container scrollLeft:', scrollableElement.scrollLeft);
+        }
+        if (thead) {
+            console.log('Thead transform:', thead.style.transform);
+        }
+        if (tbody) {
+            console.log('Tbody transform:', tbody.style.transform);
+        }
+    };
 }
 
 function cleanupScrollSynchronization() {
