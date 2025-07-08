@@ -1318,13 +1318,64 @@ function parseProductPageFromHTML(htmlString, url) {
             }
         }
         
-        // BSR Extraction
-        const bsrTextElement = [...findAll('#detailBullets_feature_div li, #productDetails_detailBullets_sections1 tr')]
-            .find(el => el.textContent.includes('Best Sellers Rank'));
-        if (bsrTextElement) {
-            const bsrMatch = bsrTextElement.textContent.match(/#([\d,]+)/);
-            if(bsrMatch) details.bsr = parseInt(bsrMatch[1].replace(/,/g, ''), 10);
+        // BSR Extraction - Enhanced version based on runFullProductPageExtraction logic
+        console.log("scrapers.js: [OFFSCREEN] Starting BSR extraction for URL:", url);
+        try {
+            let aElement = doc.querySelector('div[id="detailBulletsWrapper_feature_div"] a[href*="gp/bestseller"]');
+            console.log("scrapers.js: [OFFSCREEN] Initial BSR aElement found:", !!aElement);
+            
+            if (!aElement) {
+                const parentDiv = doc.getElementById('detailBulletsWrapper_feature_div');
+                console.log("scrapers.js: [OFFSCREEN] Parent wrapper found:", !!parentDiv);
+                if (parentDiv) {
+                    const childDiv = parentDiv.querySelector('#detailBullets_feature_div');
+                    console.log("scrapers.js: [OFFSCREEN] Child div found:", !!childDiv);
+                    if (childDiv) {
+                        const siblingUl = childDiv.nextElementSibling;
+                        console.log("scrapers.js: [OFFSCREEN] Sibling UL found:", !!siblingUl);
+                        if (siblingUl) {
+                            aElement = siblingUl.querySelector('a');
+                            console.log("scrapers.js: [OFFSCREEN] Alternative aElement found:", !!aElement);
+                        }
+                    }
+                }
+            }
+            
+            if (aElement) {
+                const mainText = aElement.previousSibling;
+                console.log("scrapers.js: [OFFSCREEN] BSR mainText found:", !!mainText);
+                if (mainText) {
+                    console.log("scrapers.js: [OFFSCREEN] BSR mainText content:", mainText.textContent);
+                    const bsrMatch = mainText.textContent.match(/\d*,?\d+,?\d*/);
+                    if (bsrMatch) {
+                        details.bsr = parseInt(bsrMatch[0].replace(/,/g, ''), 10);
+                        console.log("scrapers.js: [OFFSCREEN] Extracted BSR:", details.bsr);
+                    } else {
+                        console.log("scrapers.js: [OFFSCREEN] No BSR number match found in text");
+                    }
+                } else {
+                    console.log("scrapers.js: [OFFSCREEN] No mainText found for BSR");
+                }
+            } else {
+                console.log("scrapers.js: [OFFSCREEN] No BSR aElement found, trying fallback method");
+                // Fallback to original simple method
+                const bsrTextElement = [...findAll('#detailBullets_feature_div li, #productDetails_detailBullets_sections1 tr')]
+                    .find(el => el.textContent.includes('Best Sellers Rank'));
+                console.log("scrapers.js: [OFFSCREEN] Fallback BSR element found:", !!bsrTextElement);
+                if (bsrTextElement) {
+                    console.log("scrapers.js: [OFFSCREEN] Fallback BSR element content:", bsrTextElement.textContent);
+                    const bsrMatch = bsrTextElement.textContent.match(/#([\d,]+)/);
+                    if(bsrMatch) {
+                        details.bsr = parseInt(bsrMatch[1].replace(/,/g, ''), 10);
+                        console.log("scrapers.js: [OFFSCREEN] Fallback extracted BSR:", details.bsr);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("scrapers.js: [OFFSCREEN] BSR extraction failed gracefully.", e.message);
         }
+        
+        console.log("scrapers.js: [OFFSCREEN] Final BSR value:", details.bsr);
 
         return details;
     }
@@ -1832,6 +1883,12 @@ function parseProductPageFromHTML(htmlString, url) {
         }
     }
 
-    console.log(`Offscreen: Successfully parsed ${url}`);
+    console.log(`scrapers.js: [OFFSCREEN] Successfully parsed ${url}`);
+    console.log(`scrapers.js: [OFFSCREEN] Returning full product data:`, {
+        hasProductDetails: !!(fullProductData && fullProductData.product_details),
+        bsrValue: fullProductData?.product_details?.bsr,
+        fullProductDetailsKeys: fullProductData?.product_details ? Object.keys(fullProductData.product_details) : 'no product_details',
+        fullDataKeys: fullProductData ? Object.keys(fullProductData) : 'no data'
+    });
     return fullProductData;
 }

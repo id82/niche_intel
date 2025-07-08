@@ -52,11 +52,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("report.js: Received message from background script:", request);
         if (request.command === "update-row") {
             console.log(`report.js: Updating row for ASIN ${request.asin}. Raw data:`, request.data);
+            console.log(`report.js: BSR debugging for ${request.asin}:`, {
+                hasProductDetails: !!(request.data && request.data.product_details),
+                bsrFromProductDetails: request.data?.product_details?.bsr,
+                fullProductDetails: request.data?.product_details,
+                rawDataKeys: request.data ? Object.keys(request.data) : 'no data'
+            });
             const rowData = { ...request.data, asin: request.asin };
             // Also add the initial product info from SERP data to have all data in one place
             const initialProductInfo = serpData.productInfo[request.asin] || {};
             const combinedData = { ...initialProductInfo, ...rowData };
             console.log(`report.js: Combined data for ASIN ${request.asin}:`, combinedData);
+            console.log(`report.js: Combined BSR debugging for ${request.asin}:`, {
+                bsrFromCombined: combinedData?.product_details?.bsr,
+                fullCombinedProductDetails: combinedData?.product_details
+            });
             
             // Update author info if the individual page has better data
             if (rowData.author_info && rowData.author_info.name) {
@@ -545,13 +555,22 @@ function updateTableRow(asin, data) {
 
     const updateCell = (id, value, format) => {
         const cell = document.getElementById(id);
-        console.log(`report.js: Updating cell ${id} for ASIN ${asin}. Found cell:`, !!cell, 'Value:', value);
+        const isBSRCell = id.includes('bsr-');
+        if (isBSRCell) {
+            console.log(`report.js: BSR updateCell - ID: ${id}, Value:`, value, 'Type:', typeof value, 'Found cell:', !!cell);
+        } else {
+            console.log(`report.js: Updating cell ${id} for ASIN ${asin}. Found cell:`, !!cell, 'Value:', value);
+        }
         if (cell) {
             let displayValue = 'N/A';
-            if (value !== null) {
+            if (value !== null && value !== undefined) {
                 displayValue = format ? format(value) : value;
             }
-            console.log(`report.js: Setting ${id} to "${displayValue}"`);
+            if (isBSRCell) {
+                console.log(`report.js: BSR updateCell - Final display value:`, displayValue);
+            } else {
+                console.log(`report.js: Setting ${id} to "${displayValue}"`);
+            }
             cell.textContent = displayValue;
             cell.classList.remove('placeholder');
         } else {
@@ -564,6 +583,12 @@ function updateTableRow(asin, data) {
     const avgRating = get(['customer_reviews', 'average_rating'], data);
     const reviewImageCount = get(['customer_reviews', 'review_image_count'], data);
     const bsr = get(['product_details', 'bsr'], data);
+    console.log(`report.js: BSR extraction for ${asin}:`, {
+        bsrValue: bsr,
+        hasProductDetails: !!(data && data.product_details),
+        productDetailsKeys: data?.product_details ? Object.keys(data.product_details) : 'no product_details',
+        fullProductDetails: data?.product_details
+    });
     const daysOnMarket = get(['product_details', 'days_on_market'], data);
     const pageCount = get(['product_details', 'print_length'], data);
     const publisher = get(['product_details', 'publisher'], data);
@@ -596,6 +621,7 @@ function updateTableRow(asin, data) {
     updateCell(`formats-${asin}`, formatCount, val => val || 0);
     updateCell(`rating-${asin}`, avgRating, val => val || 0);
     updateCell(`review-images-${asin}`, reviewImageCount, val => val || 0);
+    console.log(`report.js: About to update BSR cell for ${asin}. BSR value:`, bsr, 'Type:', typeof bsr);
     updateCell(`bsr-${asin}`, bsr, val => val ? val.toLocaleString() : 'N/A');
     updateCell(`days-${asin}`, daysOnMarket, val => val !== null ? val.toLocaleString() : 'N/A');
     updateCell(`length-${asin}`, pageCount, val => val ? val.toLocaleString() : 'N/A');
