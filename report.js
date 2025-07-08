@@ -1851,23 +1851,17 @@ function setupScrollSynchronization() {
             const scrollLeft = this.scrollLeft;
             console.log('report.js: Filter scrolled to:', scrollLeft);
             
-            // Try multiple approaches to sync the table scroll
-            // 1. Set scrollLeft on table container
-            if (scrollableElement) {
-                scrollableElement.scrollLeft = scrollLeft;
-            }
-            
-            // 2. Set scrollLeft on table element
+            // For flexbox table structure, apply transform to the entire table
+            // This ensures both thead and tbody move together as a unit
             if (table) {
+                table.style.transform = `translateX(-${scrollLeft}px)`;
+                // Also set scrollLeft as fallback for non-flexbox elements
                 table.scrollLeft = scrollLeft;
             }
             
-            // 3. Use transform for flexbox tables (more reliable for flex layouts)
-            if (thead) {
-                thead.style.transform = `translateX(-${scrollLeft}px)`;
-            }
-            if (tbody) {
-                tbody.style.transform = `translateX(-${scrollLeft}px)`;
+            // Set scrollLeft on table container as additional fallback
+            if (scrollableElement) {
+                scrollableElement.scrollLeft = scrollLeft;
             }
             
             // Clear existing timeout and set new one
@@ -1938,11 +1932,9 @@ function setupScrollSynchronization() {
         if (scrollableElement) {
             console.log('Table container scrollLeft:', scrollableElement.scrollLeft);
         }
-        if (thead) {
-            console.log('Thead transform:', thead.style.transform);
-        }
-        if (tbody) {
-            console.log('Tbody transform:', tbody.style.transform);
+        if (table) {
+            console.log('Table transform:', table.style.transform);
+            console.log('Table scrollLeft:', table.scrollLeft);
         }
     };
 }
