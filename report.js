@@ -1897,6 +1897,27 @@ function setupScrollSynchronization() {
             // Update filter container scroll
             filterContainer.scrollLeft = scrollLeft;
             
+            // Apply the same transforms as in filterScrollHandler
+            // Apply to tr elements within thead/tfoot since they have display: flex
+            if (thead) {
+                const theadTr = thead.querySelector('tr');
+                if (theadTr) {
+                    theadTr.style.transform = `translateX(-${scrollLeft}px)`;
+                }
+            }
+            if (tbody) {
+                tbody.style.transform = `translateX(-${scrollLeft}px)`;
+            }
+            
+            // Also apply to tfoot tr elements if they exist
+            const tfoot = document.querySelector('tfoot');
+            if (tfoot) {
+                const tfootTrs = tfoot.querySelectorAll('tr');
+                tfootTrs.forEach(tr => {
+                    tr.style.transform = `translateX(-${scrollLeft}px)`;
+                });
+            }
+            
             // Clear existing timeout and set new one
             if (tableScrollTimeout) clearTimeout(tableScrollTimeout);
             tableScrollTimeout = setTimeout(() => { 
