@@ -480,8 +480,8 @@ function createInfoTable(bookData, metrics) {
         bookData.editorialReviews ? 'Yes' : 'No',
         bookData.bsr ? bookData.bsr.toLocaleString() : 'N/A',
         bookData.largeTrim ? 'Yes' : 'No',
-        metrics.royaltyPerUnit ? `$${metrics.royaltyPerUnit.toFixed(2)}` : 'N/A',
-        metrics.monthlyRoyalty ? `$${metrics.monthlyRoyalty.toLocaleString()}` : 'N/A'
+        metrics.royaltyPerUnit ? `$${metrics.royaltyPerUnit.toFixed(2)}` : '$0.00',
+        metrics.monthlyRoyalty ? `$${metrics.monthlyRoyalty.toLocaleString()}` : '$0'
     ];
     
     // Create header row
