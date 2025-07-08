@@ -114,6 +114,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         progressBar.style.width = percentage + '%';
         progressBar.textContent = percentage + '%';
     }
+    
+    // Reinitialize scroll sync if the filter is active and table dimensions changed
+    const filterToggle = document.getElementById('filterToggle');
+    if (filterToggle && filterToggle.checked && scrollSyncInitialized) {
+        setTimeout(() => {
+            setupScrollSynchronization();
+        }, 50);
+    }
         } else if (request.command === "analysis-complete") {
             console.log("report.js: Received analysis complete message.");
             const message = request.stopped ? 
@@ -1535,6 +1543,8 @@ function setupFilterFunctionality() {
             }, 100);
         } else {
             filterContainer.style.display = 'none';
+            // Clean up scroll synchronization when hiding filters
+            cleanupScrollSynchronization();
             // Clear all filters when toggle is turned off
             clearAllFilters();
         }
@@ -1783,52 +1793,127 @@ function debounce(func, wait) {
 
 // Scroll synchronization between filter container and table
 let scrollSyncInitialized = false;
+let scrollSyncListeners = [];
 
 function setupScrollSynchronization() {
-    // Prevent multiple initializations
-    if (scrollSyncInitialized) return;
+    // Clean up existing listeners first
+    cleanupScrollSynchronization();
     
     const filterContainer = document.getElementById('filter-container');
     const tableContainer = document.getElementById('table-container');
     const tbody = document.querySelector('tbody');
     const table = document.querySelector('table');
     
-    if (!filterContainer) return;
+    console.log('report.js: Setting up scroll sync. Filter container found:', !!filterContainer);
     
-    // Find the actual scrollable table element
+    if (!filterContainer) {
+        console.log('report.js: No filter container found, skipping scroll sync');
+        return;
+    }
+    
+    // Check if filter container is visible
+    const isVisible = filterContainer.style.display !== 'none' && 
+                     window.getComputedStyle(filterContainer).display !== 'none';
+    
+    if (!isVisible) {
+        console.log('report.js: Filter container not visible, skipping scroll sync');
+        return;
+    }
+    
+    // Find the actual scrollable table element with better detection
     let scrollableTableElement = null;
-    const candidates = [tableContainer, tbody, table];
+    const candidates = [tableContainer, table, tbody];
     
     for (const candidate of candidates) {
-        if (candidate && candidate.scrollWidth > candidate.clientWidth) {
-            scrollableTableElement = candidate;
-            break;
+        if (candidate) {
+            const hasHorizontalScroll = candidate.scrollWidth > candidate.clientWidth;
+            const hasOverflow = window.getComputedStyle(candidate).overflowX !== 'visible';
+            console.log(`report.js: Checking candidate ${candidate.tagName || candidate.id}:`, {
+                scrollWidth: candidate.scrollWidth,
+                clientWidth: candidate.clientWidth,
+                hasHorizontalScroll,
+                hasOverflow,
+                overflowX: window.getComputedStyle(candidate).overflowX
+            });
+            
+            if (hasHorizontalScroll || hasOverflow) {
+                scrollableTableElement = candidate;
+                break;
+            }
         }
     }
     
-    if (!scrollableTableElement) return;
+    if (!scrollableTableElement) {
+        console.log('report.js: No scrollable table element found');
+        return;
+    }
+    
+    console.log('report.js: Using scrollable element:', scrollableTableElement.tagName || scrollableTableElement.id);
     
     let isFilterScrolling = false;
     let isTableScrolling = false;
+    let filterScrollTimeout = null;
+    let tableScrollTimeout = null;
     
     // Sync filter scroll to table scroll
-    filterContainer.addEventListener('scroll', function(e) {
+    const filterScrollHandler = function(e) {
         if (!isTableScrolling) {
             isFilterScrolling = true;
             scrollableTableElement.scrollLeft = this.scrollLeft;
-            setTimeout(() => { isFilterScrolling = false; }, 50);
+            
+            // Clear existing timeout and set new one
+            if (filterScrollTimeout) clearTimeout(filterScrollTimeout);
+            filterScrollTimeout = setTimeout(() => { 
+                isFilterScrolling = false; 
+                filterScrollTimeout = null;
+            }, 100);
         }
-    });
+    };
     
-    // Sync table scroll to filter scroll
-    scrollableTableElement.addEventListener('scroll', function(e) {
+    // Sync table scroll to filter scroll  
+    const tableScrollHandler = function(e) {
         if (!isFilterScrolling) {
             isTableScrolling = true;
             filterContainer.scrollLeft = this.scrollLeft;
-            setTimeout(() => { isTableScrolling = false; }, 50);
+            
+            // Clear existing timeout and set new one
+            if (tableScrollTimeout) clearTimeout(tableScrollTimeout);
+            tableScrollTimeout = setTimeout(() => { 
+                isTableScrolling = false; 
+                tableScrollTimeout = null;
+            }, 100);
         }
+    };
+    
+    // Add event listeners and store references for cleanup
+    filterContainer.addEventListener('scroll', filterScrollHandler);
+    scrollableTableElement.addEventListener('scroll', tableScrollHandler);
+    
+    scrollSyncListeners.push({
+        element: filterContainer,
+        event: 'scroll',
+        handler: filterScrollHandler
+    });
+    
+    scrollSyncListeners.push({
+        element: scrollableTableElement,
+        event: 'scroll', 
+        handler: tableScrollHandler
     });
     
     scrollSyncInitialized = true;
+    console.log('report.js: Scroll synchronization setup complete');
+}
+
+function cleanupScrollSynchronization() {
+    // Remove existing event listeners
+    scrollSyncListeners.forEach(({ element, event, handler }) => {
+        if (element && handler) {
+            element.removeEventListener(event, handler);
+        }
+    });
+    scrollSyncListeners = [];
+    scrollSyncInitialized = false;
+    console.log('report.js: Scroll synchronization cleaned up');
 }
 
