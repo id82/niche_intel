@@ -233,6 +233,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <th class="sortable" data-column="19" data-type="text">Publisher</th>
                 </tr>
             </thead>
+            <div class="tbody-wrapper">
             <tbody>
     `;
 
@@ -304,6 +305,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
 
     tableHTML += `
             </tbody>
+            </div>
             <tfoot>
                 <tr id="totals-row" style="font-weight: bold;">
                     <td colspan="5">Totals / Averages</td>
