@@ -1852,18 +1852,24 @@ function setupScrollSynchronization() {
             console.log('report.js: Filter scrolled to:', scrollLeft);
             
             // For flexbox table structure, apply transform to all table sections
-            // This ensures thead, tbody, and tfoot all scroll together as one unit
+            // Apply to tr elements within thead/tfoot since they have display: flex
             if (thead) {
-                thead.style.transform = `translateX(-${scrollLeft}px)`;
+                const theadTr = thead.querySelector('tr');
+                if (theadTr) {
+                    theadTr.style.transform = `translateX(-${scrollLeft}px)`;
+                }
             }
             if (tbody) {
                 tbody.style.transform = `translateX(-${scrollLeft}px)`;
             }
             
-            // Also apply to tfoot if it exists to keep totals aligned
+            // Also apply to tfoot tr elements if they exist
             const tfoot = document.querySelector('tfoot');
             if (tfoot) {
-                tfoot.style.transform = `translateX(-${scrollLeft}px)`;
+                const tfootTrs = tfoot.querySelectorAll('tr');
+                tfootTrs.forEach(tr => {
+                    tr.style.transform = `translateX(-${scrollLeft}px)`;
+                });
             }
             
             // Set scrollLeft on table container as additional fallback
@@ -1940,14 +1946,16 @@ function setupScrollSynchronization() {
             console.log('Table container scrollLeft:', scrollableElement.scrollLeft);
         }
         if (thead) {
-            console.log('Thead transform:', thead.style.transform);
+            const theadTr = thead.querySelector('tr');
+            console.log('Thead tr transform:', theadTr ? theadTr.style.transform : 'no tr found');
         }
         if (tbody) {
             console.log('Tbody transform:', tbody.style.transform);
         }
         const tfoot = document.querySelector('tfoot');
         if (tfoot) {
-            console.log('Tfoot transform:', tfoot.style.transform);
+            const tfootTrs = tfoot.querySelectorAll('tr');
+            console.log('Tfoot tr transforms:', Array.from(tfootTrs).map(tr => tr.style.transform));
         }
     };
 }
