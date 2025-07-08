@@ -1851,8 +1851,11 @@ function setupScrollSynchronization() {
             const scrollLeft = this.scrollLeft;
             console.log('report.js: Filter scrolled to:', scrollLeft);
             
-            // For flexbox table structure, apply transform to tbody only
-            // This keeps the header fixed while scrolling the body content
+            // For flexbox table structure, apply transform to all table sections
+            // This ensures thead, tbody, and tfoot all scroll together as one unit
+            if (thead) {
+                thead.style.transform = `translateX(-${scrollLeft}px)`;
+            }
             if (tbody) {
                 tbody.style.transform = `translateX(-${scrollLeft}px)`;
             }
@@ -1935,6 +1938,9 @@ function setupScrollSynchronization() {
         }
         if (scrollableElement) {
             console.log('Table container scrollLeft:', scrollableElement.scrollLeft);
+        }
+        if (thead) {
+            console.log('Thead transform:', thead.style.transform);
         }
         if (tbody) {
             console.log('Tbody transform:', tbody.style.transform);
