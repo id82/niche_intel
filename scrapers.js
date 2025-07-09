@@ -359,8 +359,10 @@ function runFullProductPageExtraction() {
     const normalizeDate = (dateString) => {
         if (!dateString) return null;
         try {
+            // Clean Unicode characters and normalize whitespace
+            const cleanedString = dateString.replace(/[\s\u200F\u200E\u202A\u202B\u202C\u202D\u202E]+/g, ' ').trim();
             // Remove periods from abbreviated months (Jan., Feb., Mar., etc.)
-            const cleanDateString = dateString.replace(/(\w{3,4})\.(?=\s)/g, '$1');
+            const cleanDateString = cleanedString.replace(/(\w{3,4})\.(?=\s)/g, '$1');
             const date = new Date(cleanDateString);
             if (isNaN(date.getTime())) return dateString;
             return date.toISOString().split('T')[0];
@@ -1266,8 +1268,10 @@ function parseProductPageFromHTML(htmlString, url) {
     const normalizeDate = (dateString) => {
          if (!dateString) return null;
         try {
+            // Clean Unicode characters and normalize whitespace
+            const cleanedString = dateString.replace(/[\s\u200F\u200E\u202A\u202B\u202C\u202D\u202E]+/g, ' ').trim();
             // Remove periods from abbreviated months (Jan., Feb., Mar., etc.)
-            const cleanDateString = dateString.replace(/(\w{3,4})\.(?=\s)/g, '$1');
+            const cleanDateString = cleanedString.replace(/(\w{3,4})\.(?=\s)/g, '$1');
             const date = new Date(cleanDateString);
             if (isNaN(date.getTime())) return dateString;
             return date.toISOString().split('T')[0];
