@@ -399,7 +399,7 @@ input:checked + .toggle-slider:before {
     background-color: #fff3cd !important;
     border: 2px solid #ffc107 !important;
     position: sticky !important;
-    top: 0 !important;
+    top: 50px !important;
     z-index: 5 !important;
 }
 
