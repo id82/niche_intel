@@ -1131,8 +1131,8 @@ function copyAsinsToClipboard() {
     
     const copyAsinsButton = document.getElementById('copyAsins');
     
-    // Get all ASIN links from the table
-    const asinLinks = document.querySelectorAll('.asin-cell a');
+    // Get ASIN links only from visible rows (not hidden by filters)
+    const asinLinks = document.querySelectorAll('tr:not([style*="display: none"]) .asin-cell a');
     if (asinLinks.length === 0) {
         alert('No ASINs found to copy');
         return;
