@@ -468,8 +468,13 @@ function createInfoTable(bookData, metrics) {
         font-size: 14px;
     `;
     
-    // Create table data with reordered columns: Pages 3rd, Large Trim 9th
-    const labels = ['ASIN', 'Price', 'Pages', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'Royalty/Book', 'Est. Monthly Royalty'];
+    // Create table data with reordered columns: Pages 3rd, Large Trim 9th, BE ACOS 10th
+    const labels = ['ASIN', 'Price', 'Pages', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'BE ACOS', 'Royalty/Book', 'Est. Monthly Royalty'];
+    
+    // Calculate BE ACOS (Break Even ACOS) = Royalty/Book ÷ Price
+    const price = bookData.listPrice || bookData.price;
+    const beAcos = (metrics.royaltyPerUnit && price) ? (metrics.royaltyPerUnit / price) * 100 : 0;
+    
     const values = [
         bookData.asin || 'N/A',
         bookData.listPrice ? `$${bookData.listPrice.toFixed(2)}` : 'N/A',
@@ -480,6 +485,7 @@ function createInfoTable(bookData, metrics) {
         bookData.editorialReviews ? 'Yes' : 'No',
         bookData.bsr ? bookData.bsr.toLocaleString() : 'N/A',
         bookData.largeTrim ? 'Yes' : 'No',
+        beAcos ? `${beAcos.toFixed(0)}%` : '0%',
         metrics.royaltyPerUnit ? `$${metrics.royaltyPerUnit.toFixed(2)}` : '$0.00',
         metrics.monthlyRoyalty ? `$${metrics.monthlyRoyalty.toLocaleString()}` : '$0'
     ];
