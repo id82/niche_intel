@@ -399,7 +399,7 @@ input:checked + .toggle-slider:before {
     background-color: #fff3cd !important;
     border: 2px solid #ffc107 !important;
     position: sticky !important;
-    top: 35px !important;
+    top: 43px !important;
     z-index: 15 !important;
 }
 
@@ -460,6 +460,7 @@ thead {
     position: sticky;
     top: 0;
     z-index: 10;
+    height: 43px;
 }
 
 thead tr {
