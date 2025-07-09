@@ -580,6 +580,12 @@ function initBookPageInfo() {
         return;
     }
     
+    // Only run on product detail pages with /dp/ or /gp/ in the URL
+    if (!window.location.pathname.includes('/dp/') && !window.location.pathname.includes('/gp/')) {
+        console.log("NicheIntel Pro: Not a product detail page (/dp/ or /gp/), skipping book page info");
+        return;
+    }
+    
     if (!isValidBookPage()) {
         console.log("NicheIntel Pro: Not a valid book page, skipping");
         return;
