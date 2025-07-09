@@ -399,7 +399,7 @@ input:checked + .toggle-slider:before {
     background-color: #fff3cd !important;
     border: 2px solid #ffc107 !important;
     position: sticky !important;
-    top: 50px !important;
+    top: 36px !important;
     z-index: 5 !important;
 }
 
@@ -758,7 +758,6 @@ th:nth-child(n+7), td:nth-child(n+7) {
 
 tbody {
     flex: 1;
-    overflow-y: auto;
 }
 
 tbody tr {
