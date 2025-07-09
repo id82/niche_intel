@@ -8,7 +8,7 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const version = manifest.version;
 
 // Create zip filename
-const zipName = `chrome-extension-v${version}.zip`;
+const zipName = `nicheintel-pro-v${version}.zip`;
 const zipPath = path.join(__dirname, zipName);
 
 // Create a file to stream archive data to
@@ -19,7 +19,7 @@ const archive = archiver('zip', {
 
 // Listen for all archive data to be written
 output.on('close', function() {
-    console.log(`✅ Chrome extension package created: ${zipName}`);
+    console.log(`✅ NicheIntel Pro package created: ${zipName}`);
     console.log(`📦 Total size: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB`);
     console.log(`🚀 Ready for Chrome Web Store upload!`);
 });

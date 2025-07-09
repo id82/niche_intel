@@ -59,6 +59,7 @@ backup/
 notes.txt
 todo.txt
 scratch.*
+instructions.md
 
 # Chrome extension specific
 # Keep the .env file excluded since it might contain API keys
