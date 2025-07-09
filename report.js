@@ -4,6 +4,27 @@ let uniqueAsins = new Set(); // To track unique ASINs and avoid double counting
 let processedCount = 0;
 let totalToProcess = 0;
 let searchKeyword = ''; // Global search keyword for filename generation
+let currentDomain = ''; // Global domain for currency symbols
+
+// Currency symbol mapping based on domain
+function getCurrencySymbol(domain) {
+    const currencyMap = {
+        'amazon.com': '$',
+        'amazon.ca': '$',        // CAD but use $ symbol
+        'amazon.co.uk': '£',
+        'amazon.de': '€',
+        'amazon.fr': '€',
+        'amazon.it': '€',
+        'amazon.es': '€',
+        'amazon.nl': '€',
+        'amazon.com.au': '$',    // AUD but use $ symbol
+        'amazon.co.jp': '¥',
+        'amazon.pl': 'zł',
+        'amazon.se': 'kr'
+    };
+    
+    return currencyMap[domain] || ''; // Return empty string if domain not found
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("report.js: DOM fully loaded and parsed.");
@@ -14,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     createImageHoverModal();
 
     console.log("report.js: Loading initial data from local storage.");
-    const { serpData, asinsToProcess, currentDomain, searchKeyword: loadedKeyword } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']);
+    const { serpData, asinsToProcess, currentDomain: loadedDomain, searchKeyword: loadedKeyword } = await chrome.storage.local.get(['serpData', 'asinsToProcess', 'currentDomain', 'searchKeyword']);
 
     if (!serpData || !asinsToProcess) {
         console.error("report.js: Could not load initial data from storage.");
@@ -25,7 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log("report.js: Initial data loaded successfully.", { serpData, asinsToProcess });
     
-    // Store search keyword globally and update header if available
+    // Store domain and search keyword globally
+    currentDomain = loadedDomain || '';
     searchKeyword = loadedKeyword || '';
     if (searchKeyword) {
         const headerTitle = document.querySelector('.header h1');
@@ -206,6 +228,7 @@ function getTruncatedTitle(title, maxLength = 60) {
 function renderInitialTable(serpData, asinsToProcess, container, currentDomain) {
     console.log("report.js: Rendering initial table.");
     const { productInfo, positions } = serpData;
+    const currencySymbol = getCurrencySymbol(currentDomain);
     
     let tableHTML = `
         <table>
@@ -307,7 +330,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
             <tfoot>
                 <tr id="totals-row" style="font-weight: bold;">
                     <td colspan="5">Totals / Averages</td>
-                    <td id="avg-price">$0.00</td>
+                    <td id="avg-price">${currencySymbol}0.00</td>
                     <td id="total-reviews">0</td>
                     <td id="avg-rating">0.00</td>
                     <td id="total-review-images">0</td>
@@ -319,13 +342,13 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td id="avg-aplus">0.0</td>
                     <td id="avg-ugc-videos">0.0</td>
                     <td id="pct-editorial-reviews">0.00%</td>
-                    <td id="avg-royalty-unit">$0.00</td>
-                    <td id="total-royalty-month">$0</td>
+                    <td id="avg-royalty-unit">${currencySymbol}0.00</td>
+                    <td id="total-royalty-month">${currencySymbol}0</td>
                     <td></td> <!-- Publisher -->
                 </tr>
                 <tr id="high-royalty-totals-row" style="font-weight: bold; background-color: #e8f5e8;">
-                    <td colspan="5">High Royalty (≥$500/month) -  <span id="high-royalty-count">0</span></td>
-                    <td id="high-avg-price">$0.00</td>
+                    <td colspan="5">High Royalty (≥${currencySymbol}500/month) -  <span id="high-royalty-count">0</span></td>
+                    <td id="high-avg-price">${currencySymbol}0.00</td>
                     <td id="high-total-reviews">0</td>
                     <td id="high-avg-rating">0.00</td>
                     <td id="high-total-review-images">0</td>
@@ -337,8 +360,8 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <td id="high-avg-aplus">0.0</td>
                     <td id="high-avg-ugc-videos">0.0</td>
                     <td id="high-pct-editorial-reviews">0.00%</td>
-                    <td id="high-avg-royalty-unit">$0.00</td>
-                    <td id="high-total-royalty-month">$0</td>
+                    <td id="high-avg-royalty-unit">${currencySymbol}0.00</td>
+                    <td id="high-total-royalty-month">${currencySymbol}0</td>
                     <td></td> <!-- Publisher -->
                 </tr>
             </tfoot>
@@ -493,7 +516,8 @@ function updateSelectAllState() {
 
 function clearTotalsRows() {
     // Clear main totals row
-    document.getElementById('avg-price').textContent = '$0.00';
+    const currencySymbol = getCurrencySymbol(currentDomain);
+    document.getElementById('avg-price').textContent = `${currencySymbol}0.00`;
     document.getElementById('total-reviews').textContent = '0';
     document.getElementById('avg-rating').textContent = '0.00';
     document.getElementById('total-review-images').textContent = '0';
@@ -505,12 +529,12 @@ function clearTotalsRows() {
     document.getElementById('avg-aplus').textContent = '0.0';
     document.getElementById('avg-ugc-videos').textContent = '0.0';
     document.getElementById('pct-editorial-reviews').textContent = '0%';
-    document.getElementById('avg-royalty-unit').textContent = '$0.00';
-    document.getElementById('total-royalty-month').textContent = '$0';
+    document.getElementById('avg-royalty-unit').textContent = `${currencySymbol}0.00`;
+    document.getElementById('total-royalty-month').textContent = `${currencySymbol}0`;
     
     // Clear high royalty totals row
     document.getElementById('high-royalty-count').textContent = '0';
-    document.getElementById('high-avg-price').textContent = '$0.00';
+    document.getElementById('high-avg-price').textContent = `${currencySymbol}0.00`;
     document.getElementById('high-total-reviews').textContent = '0';
     document.getElementById('high-avg-rating').textContent = '0.00';
     document.getElementById('high-total-review-images').textContent = '0';
@@ -522,8 +546,8 @@ function clearTotalsRows() {
     document.getElementById('high-avg-aplus').textContent = '0.0';
     document.getElementById('high-avg-ugc-videos').textContent = '0.0';
     document.getElementById('high-pct-editorial-reviews').textContent = '0%';
-    document.getElementById('high-avg-royalty-unit').textContent = '$0.00';
-    document.getElementById('high-total-royalty-month').textContent = '$0';
+    document.getElementById('high-avg-royalty-unit').textContent = `${currencySymbol}0.00`;
+    document.getElementById('high-total-royalty-month').textContent = `${currencySymbol}0`;
 }
 
 function updateTotalsCalculations() {
@@ -657,11 +681,12 @@ function updateTableRow(asin, data) {
             const listPrice = prices.find(p => p.type === 'list_price')?.price || prices[prices.length - 1].price;
             const lowestPrice = prices[0].price;
             
+            const currencySymbol = getCurrencySymbol(currentDomain);
             if (listPrice && lowestPrice && lowestPrice < listPrice) {
                 const discount = Math.round(((listPrice - lowestPrice) / listPrice) * 100);
-                priceDisplay = `$${listPrice.toFixed(2)}<br><span class="discount-price">$${lowestPrice.toFixed(2)}(-${discount}%)</span>`;
+                priceDisplay = `${currencySymbol}${listPrice.toFixed(2)}<br><span class="discount-price">${currencySymbol}${lowestPrice.toFixed(2)}(-${discount}%)</span>`;
             } else if (listPrice) {
-                priceDisplay = `$${listPrice.toFixed(2)}`;
+                priceDisplay = `${currencySymbol}${listPrice.toFixed(2)}`;
             }
         }
     }
@@ -677,7 +702,8 @@ function updateTableRow(asin, data) {
         if(data.royalties && data.royalties.error && (royaltyUnit === null || royaltyUnit === undefined)) {
             royaltyUnitCell.textContent = 'N/A';
         } else {
-            royaltyUnitCell.textContent = royaltyUnit !== null ? `$${royaltyUnit.toFixed(2)}` : 'N/A';
+            const currencySymbol = getCurrencySymbol(currentDomain);
+            royaltyUnitCell.textContent = royaltyUnit !== null ? `${currencySymbol}${royaltyUnit.toFixed(2)}` : 'N/A';
         }
         royaltyUnitCell.classList.remove('placeholder');
     }
@@ -688,7 +714,8 @@ function updateTableRow(asin, data) {
         if(data.royalties && data.royalties.error && (royaltyMonth === null || royaltyMonth === undefined)) {
             royaltyMonthCell.textContent = 'N/A';
         } else {
-            royaltyMonthCell.textContent = royaltyMonth !== null ? `$${Math.round(royaltyMonth).toLocaleString()}` : 'N/A';
+            const currencySymbol = getCurrencySymbol(currentDomain);
+            royaltyMonthCell.textContent = royaltyMonth !== null ? `${currencySymbol}${Math.round(royaltyMonth).toLocaleString()}` : 'N/A';
         }
         royaltyMonthCell.classList.remove('placeholder');
     }
@@ -815,7 +842,8 @@ function calculateAndDisplayTotals(allData) {
         totals.totalProducts++;
     }
 
-    document.getElementById('avg-price').textContent = (totals.priceCount > 0 ? `$${(totals.priceSum / totals.priceCount).toFixed(2)}` : '$0.00');
+    const currencySymbol = getCurrencySymbol(currentDomain);
+    document.getElementById('avg-price').textContent = (totals.priceCount > 0 ? `${currencySymbol}${(totals.priceSum / totals.priceCount).toFixed(2)}` : `${currencySymbol}0.00`);
     document.getElementById('total-reviews').textContent = (totals.reviewsCount > 0 ? Math.round(totals.reviewsSum / totals.reviewsCount).toLocaleString() : '0');
     document.getElementById('avg-rating').textContent = (totals.ratingCount > 0 ? (totals.ratingSum / totals.ratingCount).toFixed(2) : '0.00');
     document.getElementById('total-review-images').textContent = (totals.reviewImagesCount > 0 ? Math.round(totals.reviewImagesSum / totals.reviewImagesCount).toLocaleString() : '0');
@@ -824,8 +852,8 @@ function calculateAndDisplayTotals(allData) {
     document.getElementById('avg-length').textContent = (totals.lengthCount > 0 ? Math.round(totals.lengthSum / totals.lengthCount).toLocaleString() : 'N/A');
     document.getElementById('avg-aplus').textContent = (totals.aplusCount > 0 ? (totals.aplusSum / totals.aplusCount).toFixed(1) : '0.0');
     document.getElementById('avg-ugc-videos').textContent = (totals.ugcCount > 0 ? (totals.ugcVideos / totals.ugcCount).toFixed(1) : '0.0');
-    document.getElementById('avg-royalty-unit').textContent = (totals.royaltyUnitCount > 0 ? `$${(totals.royaltyUnitSum / totals.royaltyUnitCount).toFixed(2)}` : '$0.00');
-    document.getElementById('total-royalty-month').textContent = (totals.royaltyMonthCount > 0 ? `$${Math.round(totals.royaltyMonthSum / totals.royaltyMonthCount).toLocaleString()}` : '$0');
+    document.getElementById('avg-royalty-unit').textContent = (totals.royaltyUnitCount > 0 ? `${currencySymbol}${(totals.royaltyUnitSum / totals.royaltyUnitCount).toFixed(2)}` : `${currencySymbol}0.00`);
+    document.getElementById('total-royalty-month').textContent = (totals.royaltyMonthCount > 0 ? `${currencySymbol}${Math.round(totals.royaltyMonthSum / totals.royaltyMonthCount).toLocaleString()}` : `${currencySymbol}0`);
 
     // New calculations
     const avgFormats = totals.formatCount > 0 ? (totals.formatSum / totals.formatCount).toFixed(1) : '0.0';
@@ -1010,7 +1038,8 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     document.getElementById('high-royalty-count').textContent = countText;
     
     // Calculate final values
-    const avgPrice = highTotals.priceCount > 0 ? `$${(highTotals.priceSum / highTotals.priceCount).toFixed(2)}` : '$0.00';
+    const currencySymbol = getCurrencySymbol(currentDomain);
+    const avgPrice = highTotals.priceCount > 0 ? `${currencySymbol}${(highTotals.priceSum / highTotals.priceCount).toFixed(2)}` : `${currencySymbol}0.00`;
     const avgReviews = highTotals.reviewsCount > 0 ? Math.round(highTotals.reviewsSum / highTotals.reviewsCount).toLocaleString() : '0';
     const avgRating = highTotals.ratingCount > 0 ? (highTotals.ratingSum / highTotals.ratingCount).toFixed(2) : '0.00';
     const avgReviewImages = highTotals.reviewImagesCount > 0 ? Math.round(highTotals.reviewImagesSum / highTotals.reviewImagesCount).toLocaleString() : '0';
@@ -1019,8 +1048,8 @@ function calculateAndDisplayHighRoyaltyTotals(allData) {
     const avgLength = highTotals.lengthCount > 0 ? Math.round(highTotals.lengthSum / highTotals.lengthCount).toLocaleString() : 'N/A';
     const avgAplus = highTotals.aplusCount > 0 ? (highTotals.aplusSum / highTotals.aplusCount).toFixed(1) : '0.0';
     const avgUgc = highTotals.ugcCount > 0 ? (highTotals.ugcVideos / highTotals.ugcCount).toFixed(1) : '0.0';
-    const avgRoyaltyUnit = highTotals.royaltyUnitCount > 0 ? `$${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : '$0.00';
-    const avgRoyaltyMonth = highTotals.royaltyMonthCount > 0 ? `$${Math.round(highTotals.royaltyMonthSum / highTotals.royaltyMonthCount).toLocaleString()}` : '$0';
+    const avgRoyaltyUnit = highTotals.royaltyUnitCount > 0 ? `${currencySymbol}${(highTotals.royaltyUnitSum / highTotals.royaltyUnitCount).toFixed(2)}` : `${currencySymbol}0.00`;
+    const avgRoyaltyMonth = highTotals.royaltyMonthCount > 0 ? `${currencySymbol}${Math.round(highTotals.royaltyMonthSum / highTotals.royaltyMonthCount).toLocaleString()}` : `${currencySymbol}0`;
 
     console.log("report.js: High Royalty totals calculated:", {
         totalProducts: highTotals.totalProducts,
