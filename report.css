@@ -533,10 +533,18 @@ th:nth-child(6), td:nth-child(6) { /* Price */
     max-width: 80px;
 }
 
+td:nth-child(6) { /* Price td font size */
+    font-size: 14px;
+}
+
 th:nth-child(7), td:nth-child(7) { /* Reviews */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
+}
+
+td:nth-child(7) { /* Reviews td font size */
+    font-size: 14px;
 }
 
 th:nth-child(8), td:nth-child(8) { /* Avg Rating */
@@ -615,6 +623,13 @@ th:nth-child(20), td:nth-child(20) { /* Publisher */
     flex: 0 0 120px;
     min-width: 120px;
     max-width: 120px;
+}
+
+/* Increase font size for columns 8-19 (after Reviews) */
+td:nth-child(8), td:nth-child(9), td:nth-child(10), td:nth-child(11), 
+td:nth-child(12), td:nth-child(13), td:nth-child(14), td:nth-child(15), 
+td:nth-child(16), td:nth-child(17), td:nth-child(18), td:nth-child(19) {
+    font-size: 14px;
 }
 
 /* Keep Title & Author header left aligned */
