@@ -27,7 +27,8 @@ function isValidBookPage() {
 
 // Extract ASIN from URL
 function extractASIN() {
-    const asinMatch = window.location.href.match(/\/dp\/([A-Z0-9]{10})/);
+    // Match both /dp/ and /gp/product/ patterns
+    const asinMatch = window.location.href.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/);
     return asinMatch ? asinMatch[1] : null;
 }
 
