@@ -1281,7 +1281,14 @@ function parseProductPageFromHTML(htmlString, url) {
     // --- Adapted Extraction Logic ---
     function _extractProductDetails(doc) {
         // This is an adapted version of the original function
-        const details = { bsr: null, print_length: null, publication_date: null, publisher: null, days_on_market: null, large_trim: false };
+        const details = { 
+            bsr: null, bsr_category: null, bsr_sub_categories: [], 
+            print_length: null, publication_date: null, 
+            publisher: null, self_published: false,
+            new_release: null, days_on_market: null,
+            dimensions: { height: null, width: null, depth: null, unit: null },
+            large_trim: false
+        };
         const detailContainer = doc.querySelector("#detailBullets_feature_div, #productDetails_feature_div");
 
         if (detailContainer) {
@@ -1296,13 +1303,27 @@ function parseProductPageFromHTML(htmlString, url) {
 
             const publisherText = findDetailValue("Publisher");
             if (publisherText) {
-                details.publisher = publisherText.split('(')[0].trim();
-                let pubDateText = findDetailValue("Publication date") || publisherText.match(/\(([^)]+)\)/)?.[1];
-                details.publication_date = normalizeDate(pubDateText);
-                if (details.publication_date) {
-                    const timeDiff = new Date().getTime() - new Date(details.publication_date).getTime();
-                    details.days_on_market = Math.floor(timeDiff / (1000 * 3600 * 24));
-                }
+                const publisherName = publisherText.split('(')[0].trim();
+                details.publisher = publisherName;
+                details.self_published = publisherName.toLowerCase() === 'independently published';
+            }
+
+            let pubDateText = findDetailValue("Publication date");
+            if (!pubDateText && publisherText) {
+                 const dateMatch = publisherText.match(/\(([^)]+)\)/);
+                 if (dateMatch) pubDateText = dateMatch[1];
+            }
+            const normalizedDate = normalizeDate(pubDateText);
+            details.publication_date = normalizedDate;
+            if (normalizedDate) {
+                const pubDate = new Date(normalizedDate);
+                const today = new Date();
+                pubDate.setUTCHours(0, 0, 0, 0);
+                today.setUTCHours(0, 0, 0, 0);
+                const timeDiff = today.getTime() - pubDate.getTime();
+                const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+                details.days_on_market = daysDiff;
+                details.new_release = daysDiff >= 0 && daysDiff <= 30;
             }
             
             const printLengthText = findDetailValue("Print length");
@@ -1314,12 +1335,23 @@ function parseProductPageFromHTML(htmlString, url) {
             if (dimensionsText) {
                 const numbers = dimensionsText.match(/(\d+\.?\d*)/g);
                 if (numbers && numbers.length === 3) {
-                    const sortedDims = numbers.map(parseFloat).sort((a,b) => b-a);
-                    const [height, width] = sortedDims;
+                    const sortedDims = numbers.map(parseFloat).sort((a, b) => b - a);
+                    details.dimensions.height = sortedDims[0];
+                    details.dimensions.width = sortedDims[1];
+                    details.dimensions.depth = sortedDims[2];
                     const unitMatch = dimensionsText.match(/inches|cm/i);
-                    const unit = unitMatch ? unitMatch[0].toLowerCase() : null;
-                    if (unit === 'inches') details.large_trim = width > 6.12 || height > 9;
-                    else if (unit === 'cm') details.large_trim = width > 15.54 || height > 22.86;
+                    details.dimensions.unit = unitMatch ? unitMatch[0].toLowerCase() : null;
+
+                    const { height, width, unit } = details.dimensions;
+                    if (unit === 'inches') {
+                        if (width > 6.12 || height > 9) {
+                            details.large_trim = true;
+                        }
+                    } else if (unit === 'cm') {
+                        if (width > 15.54 || height > 22.86) {
+                            details.large_trim = true;
+                        }
+                    }
                 }
             }
         }
