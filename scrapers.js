@@ -386,7 +386,7 @@ function runFullProductPageExtraction() {
             const findDetailValue = (label) => {
                 console.log(`scrapers.js: Searching for detail: "${label}"`);
                 const labelEl = [...detailContainer.querySelectorAll('.a-text-bold, th')].find(
-                    el => el.textContent.trim().startsWith(label)
+                    el => cleanText(el.textContent).startsWith(label)
                 );
                 if (!labelEl) {
                     console.log(`scrapers.js: Label "${label}" not found.`);
@@ -1287,7 +1287,7 @@ function parseProductPageFromHTML(htmlString, url) {
         if (detailContainer) {
             const findDetailValue = (label) => {
                 const labelEl = [...detailContainer.querySelectorAll('.a-text-bold, th')].find(
-                    el => el.textContent.trim().startsWith(label)
+                    el => cleanText(el.textContent).startsWith(label)
                 );
                 if (!labelEl) return null;
                 const valueEl = labelEl.nextElementSibling || labelEl.closest('tr')?.querySelector('td:last-child');
