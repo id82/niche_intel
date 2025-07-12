@@ -223,8 +223,264 @@ function extractBookData() {
     const editorialElements = document.querySelectorAll('#editorialReviews_feature_div, [data-feature-name="editorialReviews"], .cr-editorial-review');
     data.editorialReviews = editorialElements.length > 0;
     
+    // Extract review metrics
+    data.reviewMetrics = getAdvancedReviewMetrics();
+    
     console.log("NicheIntel Pro: Extracted book data:", data);
     return data;
+}
+
+// Review analysis functions from review_analysis.txt
+function getAdvancedReviewMetrics() {
+    const reviewData = {
+        totalRatingCount: 0,
+        currentAverageRating: 0,
+        ratingBreakdown: {},
+        calculatedMetrics: {},
+        errors: []
+    };
+
+    try {
+        // --- 1. EXTRACT BASE DATA WITH VALIDATION ---
+        const totalCount = extractTotalReviewCount();
+        const averageRating = extractAverageRating();
+
+        if (!validateBasicData(totalCount, averageRating)) {
+            reviewData.errors.push("Invalid or missing basic review data");
+            return reviewData;
+        }
+
+        reviewData.totalRatingCount = totalCount;
+        reviewData.currentAverageRating = averageRating;
+
+        // --- 2. EXTRACT AND CALCULATE RATING BREAKDOWN ---
+        const ratingBreakdown = extractRatingBreakdown();
+
+        if (!ratingBreakdown.isValid) {
+            reviewData.errors.push("Could not extract rating breakdown");
+            return reviewData;
+        }
+
+        reviewData.ratingBreakdown = ratingBreakdown.percentages;
+
+        // --- 3. CALCULATE EXACT COUNTS WITH IMPROVED DISTRIBUTION ---
+        const exactCounts = calculateExactCounts(totalCount, ratingBreakdown.percentages);
+        const totalScore = calculateTotalScore(exactCounts);
+
+        // --- 4. CALCULATE METRICS ---
+        reviewData.calculatedMetrics = calculateMetrics(exactCounts, totalCount, totalScore, averageRating);
+
+        return reviewData;
+
+    } catch (error) {
+        reviewData.errors.push(`Calculation error: ${error.message}`);
+        return reviewData;
+    }
+}
+
+function extractTotalReviewCount() {
+    const element = document.querySelector('span[data-hook="total-review-count"]');
+    if (!element) {
+        return 0;
+    }
+
+    const text = element.textContent || "";
+    const match = text.match(/[\d,]+/);
+    if (!match) {
+        return 0;
+    }
+
+    const numberString = match[0].replace(/,/g, '');
+    const count = parseInt(numberString, 10);
+    return isNaN(count) ? 0 : count;
+}
+
+function extractAverageRating() {
+    const element = document.querySelector('span[data-hook="rating-out-of-text"]');
+    if (!element) {
+        return 0;
+    }
+
+    const text = element.textContent || "0";
+    const rating = parseFloat(text);
+    return isNaN(rating) ? 0 : rating;
+}
+
+function validateBasicData(totalCount, averageRating) {
+    return totalCount > 0 && averageRating >= 1 && averageRating <= 5;
+}
+
+function extractRatingBreakdown() {
+    const result = {
+        isValid: false,
+        percentages: {}
+    };
+
+    const histogramContainer = document.getElementById('cm_cr_dp_d_rating_histogram');
+    if (!histogramContainer) return result;
+
+    const histogramTable = histogramContainer.querySelector('#histogramTable');
+    if (!histogramTable) return result;
+
+    const percentageContainer = histogramTable.querySelector('div.a-section.a-spacing-none.a-text-right.aok-nowrap');
+    if (!percentageContainer) return result;
+
+    const percentageSpans = percentageContainer.querySelectorAll('span');
+    if (percentageSpans.length !== 5) {
+        return result;
+    }
+
+    let totalPercentage = 0;
+
+    percentageSpans.forEach((span, index) => {
+        const starLevel = 5 - index; // 5-star first, then 4, etc.
+        const percentageString = span.textContent.trim();
+
+        if (percentageString) {
+            const percentage = parseFloat(percentageString.replace('%', ''));
+            if (!isNaN(percentage) && percentage >= 0) {
+                result.percentages[starLevel] = percentage / 100;
+                totalPercentage += percentage;
+            }
+        }
+    });
+
+    const percentageDiff = Math.abs(totalPercentage - 100);
+    result.isValid = percentageDiff < 1; // Allow 1% tolerance for rounding
+
+    return result;
+}
+
+function calculateExactCounts(totalCount, percentages) {
+    const counts = {};
+    const rawCounts = {};
+    let remainingCount = totalCount;
+
+    // Calculate raw counts and initial rounded counts
+    for (let star = 1; star <= 5; star++) {
+        const percentage = percentages[star] || 0;
+        const rawCount = totalCount * percentage;
+        const roundedCount = Math.round(rawCount);
+
+        rawCounts[star] = rawCount;
+        counts[star] = roundedCount;
+        remainingCount -= roundedCount;
+    }
+
+    // Distribute remaining count using largest remainder method
+    if (remainingCount !== 0) {
+        const remainders = [];
+        for (let star = 1; star <= 5; star++) {
+            const remainder = rawCounts[star] - Math.floor(rawCounts[star]);
+            remainders.push({ star, remainder, count: counts[star] });
+        }
+
+        remainders.sort((a, b) => b.remainder - a.remainder);
+
+        let i = 0;
+        const maxIterations = Math.abs(remainingCount) * 2;
+        let iterations = 0;
+
+        while (remainingCount !== 0 && iterations < maxIterations) {
+            const currentStar = remainders[i].star;
+            if (remainingCount > 0) {
+                counts[currentStar]++;
+                remainingCount--;
+            } else {
+                if (counts[currentStar] > 0) {
+                    counts[currentStar]--;
+                    remainingCount++;
+                }
+            }
+            i = (i + 1) % remainders.length;
+            iterations++;
+        }
+    }
+
+    // Ensure non-negative counts
+    for (let star = 1; star <= 5; star++) {
+        counts[star] = Math.max(0, counts[star] || 0);
+    }
+
+    return counts;
+}
+
+function calculateTotalScore(counts) {
+    let totalScore = 0;
+    for (let star = 1; star <= 5; star++) {
+        totalScore += (counts[star] || 0) * star;
+    }
+    return totalScore;
+}
+
+function calculateRequired5StarReviews(currentScore, currentCount, targetAverage) {
+    if (targetAverage <= 1 || targetAverage > 5 || currentCount === 0) {
+        return null;
+    }
+
+    const currentAverage = currentScore / currentCount;
+    if (currentAverage >= targetAverage) {
+        return 0;
+    }
+
+    // Formula: x = (target * current_count - current_score) / (5 - target)
+    const numerator = (targetAverage * currentCount) - currentScore;
+    const denominator = 5 - targetAverage;
+
+    if (denominator <= 0) {
+        return null; // Impossible target
+    }
+
+    const required = numerator / denominator;
+    return Math.max(0, Math.ceil(required));
+}
+
+function calculateMetrics(counts, totalCount, totalScore, currentAverage) {
+    const metrics = {};
+
+    // Calculate target average without 1-star reviews
+    const count1Star = counts[1] || 0;
+    const remainingCount = totalCount - count1Star;
+    const remainingScore = totalScore - count1Star;
+
+    if (remainingCount > 0) {
+        const averageWithout1Star = remainingScore / remainingCount;
+        metrics.targetAverageWithout1Star = Math.round(averageWithout1Star * 10) / 10;
+        metrics.required5StarReviewOffset = calculateRequired5StarReviews(
+            totalScore,
+            totalCount,
+            metrics.targetAverageWithout1Star
+        );
+    } else {
+        metrics.targetAverageWithout1Star = 0;
+        metrics.required5StarReviewOffset = null;
+    }
+
+    // Calculate reviews needed for specific targets
+    const targets = [4.3, 4.8];
+    targets.forEach(target => {
+        const key = `reviewsNeededFor${target.toString().replace('.', '_')}`;
+        if (currentAverage < target) {
+            metrics[key] = calculateRequired5StarReviews(totalScore, totalCount, target);
+        } else {
+            metrics[key] = 0;
+        }
+    });
+
+    // Add verification metrics
+    const calculatedAverage = totalScore / totalCount;
+    const averageDiff = Math.abs(calculatedAverage - currentAverage);
+    const countSum = Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+    metrics.verificationData = {
+        calculatedAverage: Math.round(calculatedAverage * 100) / 100,
+        averageMatch: averageDiff < 0.05,
+        totalCountVerification: countSum === totalCount,
+        averageDifference: averageDiff,
+        countDifference: countSum - totalCount
+    };
+
+    return metrics;
 }
 
 // Calculate monthly sales and royalty using the EXACT same logic as scrapers.js
@@ -469,8 +725,28 @@ function createInfoTable(bookData, metrics) {
         font-size: 14px;
     `;
     
-    // Create table data with reordered columns: Pages 3rd, Large Trim 9th, BE ACOS 10th
-    const labels = ['ASIN', 'Price', 'Pages', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'BE ACOS', 'Royalty/Book', 'Est. Monthly Royalty'];
+    // Determine dynamic header and calculate 5-star reviews needed
+    const reviewMetrics = bookData.reviewMetrics;
+    let dynamicColumnHeader = '5★ Needed (4.3)';
+    let reviewsNeeded = 'N/A';
+    
+    if (reviewMetrics && reviewMetrics.currentAverageRating > 0 && !reviewMetrics.errors.length) {
+        const currentRating = reviewMetrics.currentAverageRating;
+        
+        if (currentRating >= 4.8) {
+            dynamicColumnHeader = '5★ Needed (4.8)';
+            reviewsNeeded = '0';
+        } else if (currentRating >= 4.3) {
+            dynamicColumnHeader = '5★ Needed (4.8)';
+            reviewsNeeded = reviewMetrics.calculatedMetrics.reviewsNeededFor4_8 || 'N/A';
+        } else {
+            dynamicColumnHeader = '5★ Needed (4.3)';
+            reviewsNeeded = reviewMetrics.calculatedMetrics.reviewsNeededFor4_3 || 'N/A';
+        }
+    }
+    
+    // Create table data with the new 4th column
+    const labels = ['ASIN', 'Price', 'Pages', dynamicColumnHeader, 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'BE ACOS', 'Royalty/Book', 'Est. Monthly Royalty'];
     
     // Calculate BE ACOS (Break Even ACOS) = Royalty/Book ÷ Price
     const price = bookData.listPrice || bookData.price;
@@ -480,6 +756,7 @@ function createInfoTable(bookData, metrics) {
         bookData.asin || 'N/A',
         bookData.listPrice ? `$${bookData.listPrice.toFixed(2)}` : 'N/A',
         bookData.pageCount ? bookData.pageCount.toLocaleString() : 'N/A',
+        reviewsNeeded,
         bookData.reviewImages || '0',
         bookData.aplusModules || '0',
         bookData.ugcVideos || '0',
@@ -495,7 +772,7 @@ function createInfoTable(bookData, metrics) {
     const headerRow = document.createElement('tr');
     headerRow.style.cssText = 'background-color: #1e293b;';
     
-    labels.forEach(label => {
+    labels.forEach((label, index) => {
         const th = document.createElement('th');
         th.textContent = label;
         th.style.cssText = `
@@ -507,7 +784,24 @@ function createInfoTable(bookData, metrics) {
             text-transform: uppercase;
             letter-spacing: 0.5px;
             border-right: 1px solid rgba(255,255,255,0.2);
+            position: relative;
         `;
+        
+        // Add tooltip to the 4th column (index 3 - the dynamic rating column)
+        if (index === 3) {
+            th.style.cursor = 'help';
+            th.title = 'At 4.3 rating the 5th star on Amazon is colored half in. At 4.8 the 5th star is fully colored in, which leads to better conversion rates.';
+            
+            // Enhanced tooltip styling
+            th.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#374151';
+            });
+            
+            th.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = 'transparent';
+            });
+        }
+        
         headerRow.appendChild(th);
     });
     table.appendChild(headerRow);
@@ -584,6 +878,13 @@ function initBookPageInfo() {
     // Only run on product detail pages with /dp/ or /gp/ in the URL
     if (!window.location.pathname.includes('/dp/') && !window.location.pathname.includes('/gp/') || window.location.pathname.includes('/gp/bestsellers')) {
         console.log("NicheIntel Pro: Not a product detail page or is a bestsellers page, skipping book page info");
+        return;
+    }
+    
+    // Check if tmm-grid-swatch elements exist (indicates individual book page)
+    const tmmSwatches = document.querySelectorAll('[id^="tmm-grid-swatch-"]');
+    if (tmmSwatches.length === 0) {
+        console.log("NicheIntel Pro: No tmm-grid-swatch elements found, not an individual book page, skipping");
         return;
     }
     
