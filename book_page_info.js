@@ -582,8 +582,8 @@ function initBookPageInfo() {
     }
     
     // Only run on product detail pages with /dp/ or /gp/ in the URL
-    if (!window.location.pathname.includes('/dp/') && !window.location.pathname.includes('/gp/')) {
-        console.log("NicheIntel Pro: Not a product detail page (/dp/ or /gp/), skipping book page info");
+    if (!window.location.pathname.includes('/dp/') && !window.location.pathname.includes('/gp/') || window.location.pathname.includes('/gp/bestsellers')) {
+        console.log("NicheIntel Pro: Not a product detail page or is a bestsellers page, skipping book page info");
         return;
     }
     
