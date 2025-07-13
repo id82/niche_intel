@@ -503,7 +503,7 @@ input:checked + .toggle-slider:before {
     padding: 6px 10px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     transition: background-color 0.2s;
     width: 100%;
@@ -514,20 +514,20 @@ input:checked + .toggle-slider:before {
 }
 
 .column-button-reset {
-    background-color: #10b981;
+    background-color: #f59e0b;
     color: white;
     border: none;
     padding: 6px 10px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     transition: background-color 0.2s;
     width: 100%;
 }
 
 .column-button-reset:hover {
-    background-color: #059669;
+    background-color: #d97706;
 }
 
 /* Hidden column styling */
