@@ -352,127 +352,103 @@ input:checked + .toggle-slider:before {
 }
 
 /* Column visibility container aligned with table columns */
-.column-visibility-container > div:nth-child(1) { /* Guidance text - skip first 5 columns */
+.column-visibility-container > div:nth-child(1) { /* Guidance text - spans first 5 columns like filters */
     flex: 0 0 588px;
     min-width: 588px;
     max-width: 588px;
 }
 
-.column-visibility-container > div:nth-child(2) { /* Type */
+.column-visibility-container > div:nth-child(2) { /* Price */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
 }
 
-.column-visibility-container > div:nth-child(3) { /* ASIN */
+.column-visibility-container > div:nth-child(3) { /* Reviews */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
 }
 
-.column-visibility-container > div:nth-child(4) { /* Cover */
-    flex: 0 0 60px;
-    min-width: 60px;
-    max-width: 60px;
-}
-
-.column-visibility-container > div:nth-child(5) { /* Title & Author - skip */
-    flex: 2;
-    min-width: 300px;
-    max-width: 300px;
-}
-
-.column-visibility-container > div:nth-child(6) { /* Price */
+.column-visibility-container > div:nth-child(4) { /* Avg Rating */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
 }
 
-.column-visibility-container > div:nth-child(7) { /* Reviews */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
-}
-
-.column-visibility-container > div:nth-child(8) { /* Avg Rating */
-    flex: 0 0 80px;
-    min-width: 80px;
-    max-width: 80px;
-}
-
-.column-visibility-container > div:nth-child(9) { /* Review Images */
+.column-visibility-container > div:nth-child(5) { /* Review Images */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(10) { /* Formats */
+.column-visibility-container > div:nth-child(6) { /* Formats */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(11) { /* BSR */
+.column-visibility-container > div:nth-child(7) { /* BSR */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(12) { /* Days on Market */
+.column-visibility-container > div:nth-child(8) { /* Days on Market */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(13) { /* Length */
+.column-visibility-container > div:nth-child(9) { /* Length */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(14) { /* Large Trim */
+.column-visibility-container > div:nth-child(10) { /* Large Trim */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(15) { /* A+ Modules */
+.column-visibility-container > div:nth-child(11) { /* A+ Modules */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(16) { /* UGC Videos */
+.column-visibility-container > div:nth-child(12) { /* UGC Videos */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(17) { /* Editorial Reviews */
+.column-visibility-container > div:nth-child(13) { /* Editorial Reviews */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(18) { /* Royalty/Book */
+.column-visibility-container > div:nth-child(14) { /* Royalty/Book */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(19) { /* Royalty/Month */
+.column-visibility-container > div:nth-child(15) { /* Royalty/Month */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.column-visibility-container > div:nth-child(20) { /* Publisher */
+.column-visibility-container > div:nth-child(16) { /* Publisher */
     flex: 0 0 120px;
     min-width: 120px;
     max-width: 120px;
 }
 
-.column-visibility-container > div:nth-child(21) { /* Show All button */
+.column-visibility-container > div:nth-child(17) { /* Show All button */
     flex: 0 0 120px;
     min-width: 120px;
     max-width: 120px;
