@@ -21,6 +21,13 @@
                         <span class="toggle-slider"></span>
                     </div>
                 </div>
+                <div class="column-toggle-container">
+                    <label for="columnToggle">Columns:</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="columnToggle">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
                 <div class="asin-focus-container">
                     <label for="asinFocusInput">My ASIN:</label>
                     <div class="input-container">
@@ -114,6 +121,33 @@
         </div>
         <div>
             <button id="clearFilters" class="filter-button">Clear All</button>
+        </div>
+    </div>
+    <div id="column-visibility-container" class="column-visibility-container" style="display: none;">
+        <div class="column-guidance">
+            <span>Hide columns to reduce table width. Use "Show All" to reset all columns to visible.</span>
+        </div>
+        <div><button class="column-button" data-column="2">Hide Type</button></div>
+        <div><button class="column-button" data-column="3">Hide ASIN</button></div>
+        <div><button class="column-button" data-column="4">Hide Cover</button></div>
+        <div class="column-skip"><span class="column-skip-text">Title & Author</span></div>
+        <div><button class="column-button" data-column="6">Hide Price</button></div>
+        <div><button class="column-button" data-column="7">Hide Reviews</button></div>
+        <div><button class="column-button" data-column="8">Hide Rating</button></div>
+        <div><button class="column-button" data-column="9">Hide Images</button></div>
+        <div><button class="column-button" data-column="10">Hide Formats</button></div>
+        <div><button class="column-button" data-column="11">Hide BSR</button></div>
+        <div><button class="column-button" data-column="12">Hide Days</button></div>
+        <div><button class="column-button" data-column="13">Hide Length</button></div>
+        <div><button class="column-button" data-column="14">Hide Trim</button></div>
+        <div><button class="column-button" data-column="15">Hide A+</button></div>
+        <div><button class="column-button" data-column="16">Hide Videos</button></div>
+        <div><button class="column-button" data-column="17">Hide Reviews</button></div>
+        <div><button class="column-button" data-column="18">Hide $/Book</button></div>
+        <div><button class="column-button" data-column="19">Hide $/Month</button></div>
+        <div><button class="column-button" data-column="20">Hide Publisher</button></div>
+        <div>
+            <button id="showAllColumns" class="column-button-reset">Show All</button>
         </div>
     </div>
     <div id="table-container">

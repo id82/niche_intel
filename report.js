@@ -1584,6 +1584,37 @@ function setupFilterFunctionality() {
         clearAllFilters();
     });
     
+    // Column visibility functionality
+    const columnToggle = document.getElementById('columnToggle');
+    const columnContainer = document.getElementById('column-visibility-container');
+    const showAllColumnsButton = document.getElementById('showAllColumns');
+    
+    // Toggle column visibility container
+    columnToggle.addEventListener('change', function() {
+        if (this.checked) {
+            columnContainer.style.display = 'flex';
+            // Set up scroll synchronization after column container is visible
+            setTimeout(() => {
+                setupScrollSynchronization();
+            }, 100);
+        } else {
+            columnContainer.style.display = 'none';
+            // Clean up scroll synchronization when hiding column controls
+            cleanupScrollSynchronization();
+        }
+    });
+    
+    // Show all columns button
+    showAllColumnsButton.addEventListener('click', function() {
+        showAllColumns();
+    });
+    
+    // Add event listeners to all column hide buttons
+    setupColumnButtonListeners();
+    
+    // Load hidden columns from localStorage
+    loadHiddenColumns();
+    
     // Add event listeners to all filter inputs
     setupFilterInputListeners();
 }
@@ -1886,5 +1917,133 @@ function cleanupScrollSynchronization() {
     scrollSyncListeners = [];
     scrollSyncInitialized = false;
     console.log('report.js: Scroll synchronization cleaned up');
+}
+
+// Column visibility functions
+function setupColumnButtonListeners() {
+    const columnButtons = document.querySelectorAll('.column-button');
+    columnButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const columnIndex = parseInt(this.getAttribute('data-column'));
+            hideColumn(columnIndex);
+            updateColumnButtonState(columnIndex, true);
+            saveHiddenColumns();
+        });
+    });
+}
+
+function hideColumn(columnIndex) {
+    // Hide header and data cells for this column
+    const table = document.querySelector('table');
+    if (!table) return;
+    
+    // Hide header cell
+    const headerCell = table.querySelector(`thead th:nth-child(${columnIndex})`);
+    if (headerCell) {
+        headerCell.classList.add('column-hidden');
+    }
+    
+    // Hide all data cells in this column
+    const dataCells = table.querySelectorAll(`tbody td:nth-child(${columnIndex})`);
+    dataCells.forEach(cell => {
+        cell.classList.add('column-hidden');
+    });
+    
+    // Hide footer cells in this column
+    const footerCells = table.querySelectorAll(`tfoot td:nth-child(${columnIndex})`);
+    footerCells.forEach(cell => {
+        cell.classList.add('column-hidden');
+    });
+}
+
+function showColumn(columnIndex) {
+    // Show header and data cells for this column
+    const table = document.querySelector('table');
+    if (!table) return;
+    
+    // Show header cell
+    const headerCell = table.querySelector(`thead th:nth-child(${columnIndex})`);
+    if (headerCell) {
+        headerCell.classList.remove('column-hidden');
+    }
+    
+    // Show all data cells in this column
+    const dataCells = table.querySelectorAll(`tbody td:nth-child(${columnIndex})`);
+    dataCells.forEach(cell => {
+        cell.classList.remove('column-hidden');
+    });
+    
+    // Show footer cells in this column
+    const footerCells = table.querySelectorAll(`tfoot td:nth-child(${columnIndex})`);
+    footerCells.forEach(cell => {
+        cell.classList.remove('column-hidden');
+    });
+}
+
+function showAllColumns() {
+    // Get all column buttons and show their corresponding columns
+    const columnButtons = document.querySelectorAll('.column-button');
+    columnButtons.forEach(button => {
+        const columnIndex = parseInt(button.getAttribute('data-column'));
+        showColumn(columnIndex);
+        updateColumnButtonState(columnIndex, false);
+    });
+    
+    // Clear localStorage
+    localStorage.removeItem('nicheIntelHiddenColumns');
+}
+
+function updateColumnButtonState(columnIndex, isHidden) {
+    const button = document.querySelector(`.column-button[data-column="${columnIndex}"]`);
+    if (!button) return;
+    
+    if (isHidden) {
+        button.textContent = button.textContent.replace('Hide', 'Show');
+        button.style.backgroundColor = '#10b981';
+        button.addEventListener('click', function showHandler() {
+            showColumn(columnIndex);
+            updateColumnButtonState(columnIndex, false);
+            saveHiddenColumns();
+            button.removeEventListener('click', showHandler);
+        });
+    } else {
+        // Reset to hide state
+        const originalText = button.textContent.replace('Show', 'Hide');
+        button.textContent = originalText;
+        button.style.backgroundColor = '#dc2626';
+        // Re-add the hide listener
+        button.addEventListener('click', function() {
+            hideColumn(columnIndex);
+            updateColumnButtonState(columnIndex, true);
+            saveHiddenColumns();
+        });
+    }
+}
+
+function saveHiddenColumns() {
+    const hiddenColumns = [];
+    const hiddenCells = document.querySelectorAll('th.column-hidden, td.column-hidden');
+    const columnIndices = new Set();
+    
+    hiddenCells.forEach(cell => {
+        // Get the column index by checking nth-child position
+        let index = 1;
+        let sibling = cell;
+        while (sibling.previousElementSibling) {
+            sibling = sibling.previousElementSibling;
+            index++;
+        }
+        columnIndices.add(index);
+    });
+    
+    localStorage.setItem('nicheIntelHiddenColumns', JSON.stringify(Array.from(columnIndices)));
+}
+
+function loadHiddenColumns() {
+    const hiddenColumns = JSON.parse(localStorage.getItem('nicheIntelHiddenColumns') || '[]');
+    hiddenColumns.forEach(columnIndex => {
+        hideColumn(columnIndex);
+        updateColumnButtonState(columnIndex, true);
+    });
 }
 
