@@ -1860,51 +1860,78 @@ function setupScrollSynchronization() {
     cleanupScrollSynchronization();
     
     const filterContainer = document.getElementById('filter-container');
+    const columnContainer = document.getElementById('column-visibility-container');
     const tableContainer = document.getElementById('table-container');
-
-    // Make sure both containers exist
-    if (!filterContainer || !tableContainer) {
-        console.warn("report.js: Could not find filter or table container for scroll sync.");
+    
+    // Make sure table container exists
+    if (!tableContainer) {
+        console.warn("report.js: Could not find table container for scroll sync.");
         return;
     }
-
+    
     // This is the correct scrollable element for the entire table.
     const scrollableTableElement = tableContainer; 
-
-    let isFilterScrolling = false;
+    let isContainerScrolling = false;
     let isTableScrolling = false;
     
-    const filterScrollHandler = function() {
+    // Get visible containers that need scroll sync
+    const visibleContainers = [];
+    if (filterContainer && filterContainer.style.display !== 'none') {
+        visibleContainers.push(filterContainer);
+    }
+    if (columnContainer && columnContainer.style.display !== 'none') {
+        visibleContainers.push(columnContainer);
+    }
+    
+    if (visibleContainers.length === 0) {
+        console.log("report.js: No visible containers for scroll sync.");
+        return;
+    }
+    
+    // Handler for when containers scroll - sync to table
+    const containerScrollHandler = function() {
         if (!isTableScrolling) {
-            isFilterScrolling = true;
+            isContainerScrolling = true;
             scrollableTableElement.scrollLeft = this.scrollLeft;
-            // Use requestAnimationFrame for smoother performance and to avoid layout thrashing
+            
+            // Sync all other visible containers to match this one
+            visibleContainers.forEach(container => {
+                if (container !== this) {
+                    container.scrollLeft = this.scrollLeft;
+                }
+            });
+            
             requestAnimationFrame(() => {
-                isFilterScrolling = false;
+                isContainerScrolling = false;
             });
         }
     };
     
+    // Handler for when table scrolls - sync to all containers
     const tableScrollHandler = function() {
-        if (!isFilterScrolling) {
+        if (!isContainerScrolling) {
             isTableScrolling = true;
-            filterContainer.scrollLeft = this.scrollLeft;
+            visibleContainers.forEach(container => {
+                container.scrollLeft = this.scrollLeft;
+            });
             requestAnimationFrame(() => {
                 isTableScrolling = false;
             });
         }
     };
     
-    // Add event listeners
-    filterContainer.addEventListener('scroll', filterScrollHandler);
-    scrollableTableElement.addEventListener('scroll', tableScrollHandler);
+    // Add event listeners to all visible containers
+    visibleContainers.forEach(container => {
+        container.addEventListener('scroll', containerScrollHandler);
+        scrollSyncListeners.push({ element: container, event: 'scroll', handler: containerScrollHandler });
+    });
     
-    // Store listeners so they can be removed later
-    scrollSyncListeners.push({ element: filterContainer, event: 'scroll', handler: filterScrollHandler });
+    // Add event listener to table
+    scrollableTableElement.addEventListener('scroll', tableScrollHandler);
     scrollSyncListeners.push({ element: scrollableTableElement, event: 'scroll', handler: tableScrollHandler });
 
     scrollSyncInitialized = true;
-    console.log('report.js: Scroll synchronization setup complete (Correct Version)');
+    console.log('report.js: Scroll synchronization setup complete for', visibleContainers.length, 'containers');
 }
 
 function cleanupScrollSynchronization() {
