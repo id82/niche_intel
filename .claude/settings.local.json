@@ -13,7 +13,8 @@
       "Bash(npm install:*)",
       "Bash(ls:*)",
       "Bash(zip:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(node:*)"
     ]
   },
   "enableAllProjectMcpServers": false

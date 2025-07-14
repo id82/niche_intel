@@ -1948,12 +1948,22 @@ function cleanupScrollSynchronization() {
 
 // Column visibility functions
 function setupColumnButtonListeners() {
-    const columnButtons = document.querySelectorAll('.column-button');
-    columnButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const columnIndex = parseInt(this.getAttribute('data-column'));
-            hideColumn(columnIndex);
-            updateColumnButtonState(columnIndex, true);
+    const columnToggleWrappers = document.querySelectorAll('.column-toggle-wrapper');
+    columnToggleWrappers.forEach(wrapper => {
+        const checkbox = wrapper.querySelector('input[type="checkbox"]');
+        const columnIndex = parseInt(wrapper.getAttribute('data-column'));
+        
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                showColumn(columnIndex);
+                wrapper.classList.remove('hidden');
+            } else {
+                hideColumn(columnIndex);
+                // Auto-hide the toggle wrapper after a short delay
+                setTimeout(() => {
+                    wrapper.classList.add('hidden');
+                }, 300);
+            }
             saveHiddenColumns();
         });
     });
@@ -2008,69 +2018,57 @@ function showColumn(columnIndex) {
 }
 
 function showAllColumns() {
-    // Get all column buttons and show their corresponding columns
-    const columnButtons = document.querySelectorAll('.column-button');
-    columnButtons.forEach(button => {
-        const columnIndex = parseInt(button.getAttribute('data-column'));
+    // Get all column toggle wrappers and show their corresponding columns
+    const columnToggleWrappers = document.querySelectorAll('.column-toggle-wrapper');
+    columnToggleWrappers.forEach(wrapper => {
+        const columnIndex = parseInt(wrapper.getAttribute('data-column'));
+        const checkbox = wrapper.querySelector('input[type="checkbox"]');
+        
         showColumn(columnIndex);
-        updateColumnButtonState(columnIndex, false);
+        checkbox.checked = true;
+        wrapper.classList.remove('hidden');
     });
     
     // Clear localStorage
     localStorage.removeItem('nicheIntelHiddenColumns');
 }
 
-function updateColumnButtonState(columnIndex, isHidden) {
-    const button = document.querySelector(`.column-button[data-column="${columnIndex}"]`);
-    if (!button) return;
+function updateColumnToggleState(columnIndex, isHidden) {
+    const wrapper = document.querySelector(`.column-toggle-wrapper[data-column="${columnIndex}"]`);
+    if (!wrapper) return;
+    
+    const checkbox = wrapper.querySelector('input[type="checkbox"]');
     
     if (isHidden) {
-        button.textContent = button.textContent.replace('Hide', 'Show');
-        button.style.backgroundColor = '#10b981';
-        button.addEventListener('click', function showHandler() {
-            showColumn(columnIndex);
-            updateColumnButtonState(columnIndex, false);
-            saveHiddenColumns();
-            button.removeEventListener('click', showHandler);
-        });
+        checkbox.checked = false;
+        wrapper.classList.add('hidden');
     } else {
-        // Reset to hide state
-        const originalText = button.textContent.replace('Show', 'Hide');
-        button.textContent = originalText;
-        button.style.backgroundColor = '#dc2626';
-        // Re-add the hide listener
-        button.addEventListener('click', function() {
-            hideColumn(columnIndex);
-            updateColumnButtonState(columnIndex, true);
-            saveHiddenColumns();
-        });
+        checkbox.checked = true;
+        wrapper.classList.remove('hidden');
     }
 }
 
 function saveHiddenColumns() {
     const hiddenColumns = [];
-    const hiddenCells = document.querySelectorAll('th.column-hidden, td.column-hidden');
-    const columnIndices = new Set();
+    const columnToggleWrappers = document.querySelectorAll('.column-toggle-wrapper');
     
-    hiddenCells.forEach(cell => {
-        // Get the column index by checking nth-child position
-        let index = 1;
-        let sibling = cell;
-        while (sibling.previousElementSibling) {
-            sibling = sibling.previousElementSibling;
-            index++;
+    columnToggleWrappers.forEach(wrapper => {
+        const checkbox = wrapper.querySelector('input[type="checkbox"]');
+        const columnIndex = parseInt(wrapper.getAttribute('data-column'));
+        
+        if (!checkbox.checked) {
+            hiddenColumns.push(columnIndex);
         }
-        columnIndices.add(index);
     });
     
-    localStorage.setItem('nicheIntelHiddenColumns', JSON.stringify(Array.from(columnIndices)));
+    localStorage.setItem('nicheIntelHiddenColumns', JSON.stringify(hiddenColumns));
 }
 
 function loadHiddenColumns() {
     const hiddenColumns = JSON.parse(localStorage.getItem('nicheIntelHiddenColumns') || '[]');
     hiddenColumns.forEach(columnIndex => {
         hideColumn(columnIndex);
-        updateColumnButtonState(columnIndex, true);
+        updateColumnToggleState(columnIndex, true);
     });
 }
 
