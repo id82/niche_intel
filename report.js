@@ -2009,6 +2009,15 @@ function hideColumn(columnIndex) {
     footerCells.forEach(cell => {
         cell.classList.add('column-hidden');
     });
+    
+    // Hide corresponding filter (filter div index = column index - 3)
+    if (columnIndex >= 5) {
+        const filterIndex = columnIndex - 3;
+        const filterDiv = document.querySelector(`.filter-container > div:nth-child(${filterIndex})`);
+        if (filterDiv) {
+            filterDiv.classList.add('column-hidden');
+        }
+    }
 }
 
 function showColumn(columnIndex) {
@@ -2033,6 +2042,15 @@ function showColumn(columnIndex) {
     footerCells.forEach(cell => {
         cell.classList.remove('column-hidden');
     });
+    
+    // Show corresponding filter (filter div index = column index - 3)
+    if (columnIndex >= 5) {
+        const filterIndex = columnIndex - 3;
+        const filterDiv = document.querySelector(`.filter-container > div:nth-child(${filterIndex})`);
+        if (filterDiv) {
+            filterDiv.classList.remove('column-hidden');
+        }
+    }
 }
 
 function showAllColumns() {

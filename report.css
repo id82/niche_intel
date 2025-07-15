@@ -166,9 +166,9 @@ input:checked + .toggle-slider:before {
 
 /* Filter inputs aligned with table columns */
 .filter-container > div:nth-child(1) { /* Skip first 4 columns */
-    flex: 0 0 288px;
-    min-width: 288px;
-    max-width: 288px;
+    flex: 0 0 272px;
+    min-width: 272px;
+    max-width: 272px;
 }
 
 .filter-container > div:nth-child(2) { /* Title & Author */
@@ -282,7 +282,7 @@ input:checked + .toggle-slider:before {
 .filter-guidance {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     height: 100%;
 }
 
@@ -291,7 +291,7 @@ input:checked + .toggle-slider:before {
     color: #64748b;
     font-style: italic;
     line-height: 1.3;
-    text-align: left;
+    text-align: center;
 }
 
 .filter-input,
@@ -359,9 +359,9 @@ input:checked + .toggle-slider:before {
 
 /* Column visibility container aligned with table columns */
 .column-visibility-container > div:nth-child(1) { /* Guidance text - spans first 5 columns like filters */
-    flex: 0 0 288px;
-    min-width: 288px;
-    max-width: 288px;
+    flex: 0 0 588px;
+    min-width: 588px;
+    max-width: 588px;
 }
 
 .column-visibility-container > div:nth-child(2) { /* Price */
@@ -497,7 +497,7 @@ input:checked + .toggle-slider:before {
 .column-guidance {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     height: 100%;
 }
 
@@ -506,7 +506,7 @@ input:checked + .toggle-slider:before {
     color: #64748b;
     font-style: italic;
     line-height: 1.3;
-    text-align: left;
+    text-align: center;
 }
 
 /* Column skip styling for non-hideable columns */
