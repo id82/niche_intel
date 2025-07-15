@@ -165,97 +165,103 @@ input:checked + .toggle-slider:before {
 }
 
 /* Filter inputs aligned with table columns */
-.filter-container > div:nth-child(1) { /* Skip first 5 columns */
-    flex: 0 0 588px;
-    min-width: 588px;
-    max-width: 588px;
+.filter-container > div:nth-child(1) { /* Skip first 4 columns */
+    flex: 0 0 288px;
+    min-width: 288px;
+    max-width: 288px;
 }
 
-.filter-container > div:nth-child(2) { /* Price */
+.filter-container > div:nth-child(2) { /* Title & Author */
+    flex: 0 0 300px;
+    min-width: 300px;
+    max-width: 300px;
+}
+
+.filter-container > div:nth-child(3) { /* Price */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
 }
 
-.filter-container > div:nth-child(3) { /* Reviews */
+.filter-container > div:nth-child(4) { /* Reviews */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
 }
 
-.filter-container > div:nth-child(4) { /* Avg Rating */
+.filter-container > div:nth-child(5) { /* Avg Rating */
     flex: 0 0 80px;
     min-width: 80px;
     max-width: 80px;
 }
 
-.filter-container > div:nth-child(5) { /* Review Images */
+.filter-container > div:nth-child(6) { /* Review Images */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(6) { /* Formats - skip */
+.filter-container > div:nth-child(7) { /* Formats - skip */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(7) { /* BSR */
+.filter-container > div:nth-child(8) { /* BSR */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(8) { /* Days on Market */
+.filter-container > div:nth-child(9) { /* Days on Market */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(9) { /* Length */
+.filter-container > div:nth-child(10) { /* Length */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(10) { /* Large Trim */
+.filter-container > div:nth-child(11) { /* Large Trim */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(11) { /* A+ Modules */
+.filter-container > div:nth-child(12) { /* A+ Modules */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(12) { /* UGC Videos */
+.filter-container > div:nth-child(13) { /* UGC Videos */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(13) { /* Editorial Reviews */
+.filter-container > div:nth-child(14) { /* Editorial Reviews */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(14) { /* Royalty/Book */
+.filter-container > div:nth-child(15) { /* Royalty/Book */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(15) { /* Royalty/Month */
+.filter-container > div:nth-child(16) { /* Royalty/Month */
     flex: 0 0 100px;
     min-width: 100px;
     max-width: 100px;
 }
 
-.filter-container > div:nth-child(16) { /* Publisher - Clear button */
+.filter-container > div:nth-child(17) { /* Publisher - Clear button */
     flex: 0 0 120px;
     min-width: 120px;
     max-width: 120px;
@@ -353,9 +359,9 @@ input:checked + .toggle-slider:before {
 
 /* Column visibility container aligned with table columns */
 .column-visibility-container > div:nth-child(1) { /* Guidance text - spans first 5 columns like filters */
-    flex: 0 0 588px;
-    min-width: 588px;
-    max-width: 588px;
+    flex: 0 0 288px;
+    min-width: 288px;
+    max-width: 288px;
 }
 
 .column-visibility-container > div:nth-child(2) { /* Price */

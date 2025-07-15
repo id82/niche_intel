@@ -1672,6 +1672,12 @@ function applyFilters() {
 function buildActiveFilters() {
     const filters = {};
     
+    // Title/Author filter
+    const titleAuthorValue = document.getElementById('titleAuthorFilter').value.trim();
+    if (titleAuthorValue && titleAuthorValue.length >= 3) {
+        filters.titleAuthor = titleAuthorValue.toLowerCase();
+    }
+    
     // Price filters
     const priceMin = parseFloat(document.getElementById('priceMin').value);
     const priceMax = parseFloat(document.getElementById('priceMax').value);
@@ -1769,6 +1775,9 @@ function buildActiveFilters() {
 function passesAllFilters(row) {
     const asin = row.dataset.asin;
     
+    // Check title/author filter
+    if (activeFilters.titleAuthor && !passesTitleAuthorFilter(row, activeFilters.titleAuthor)) return false;
+    
     // Check numerical filters
     if (activeFilters.price && !passesNumericalFilter(row, 5, activeFilters.price)) return false;
     if (activeFilters.reviews && !passesNumericalFilter(row, 6, activeFilters.reviews)) return false;
@@ -1809,6 +1818,15 @@ function passesBooleanFilter(row, columnIndex, filterValue) {
     
     const cellText = cell.textContent.trim();
     return cellText === filterValue;
+}
+
+function passesTitleAuthorFilter(row, filterValue) {
+    // Title & Author is in column index 4 (0-based: Select, Type, ASIN, Cover, Title & Author)
+    const cell = row.children[4];
+    if (!cell) return true;
+    
+    const cellText = cell.textContent.trim().toLowerCase();
+    return cellText.includes(filterValue);
 }
 
 function getRowDataForTotals(row, asin) {
