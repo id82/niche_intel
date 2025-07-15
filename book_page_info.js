@@ -5,24 +5,33 @@ console.log("NicheIntel Pro: Book page info script loaded");
 
 // Check if this is a valid Amazon book page
 function isValidBookPage() {
+    // Primary check: data-request-context element
     try {
         const requestContextElement = document.querySelector('div[data-request-context]');
-        if (!requestContextElement) {
-            console.log("NicheIntel Pro: No data-request-context element found");
-            return false;
+        if (requestContextElement) {
+            const requestContext = JSON.parse(requestContextElement.dataset.requestContext);
+            const storeName = requestContext.storeName;
+            
+            console.log("NicheIntel Pro: Store name detected:", storeName);
+            
+            // Check if it's a book or kindle page
+            if (storeName === 'books' || storeName === 'digital-text') {
+                return true;
+            }
         }
-        
-        const requestContext = JSON.parse(requestContextElement.dataset.requestContext);
-        const storeName = requestContext.storeName;
-        
-        console.log("NicheIntel Pro: Store name detected:", storeName);
-        
-        // Check if it's a book or kindle page
-        return storeName === 'books' || storeName === 'digital-text';
     } catch (error) {
-        console.log("NicheIntel Pro: Error checking page type:", error);
-        return false;
+        console.log("NicheIntel Pro: Error checking data-request-context:", error);
     }
+    
+    // Secondary check: if nav-subnav with data-category="books" exists, it's a valid book page
+    const navSubnav = document.querySelector('div[id="nav-subnav"][data-category="books"]');
+    if (navSubnav) {
+        console.log("NicheIntel Pro: Found nav-subnav with data-category='books', treating as valid book page");
+        return true;
+    }
+    
+    console.log("NicheIntel Pro: No valid book page indicators found");
+    return false;
 }
 
 // Extract ASIN from URL
@@ -150,7 +159,8 @@ function extractBookData() {
     for (const element of detailsElements) {
         const text = element.textContent;
         if (text.includes('Best Sellers Rank') || text.includes('Amazon Bestsellers Rank')) {
-            const bsrMatch = text.match(/#([\d,]+)/);
+            // Try both formats: "#123" and "123 in Books"
+            const bsrMatch = text.match(/#([\d,]+)/) || text.match(/Best Sellers Rank:\s*(\d+(?:,\d+)*)/);
             if (bsrMatch) {
                 data.bsr = parseInt(bsrMatch[1].replace(/,/g, ''));
                 break;
