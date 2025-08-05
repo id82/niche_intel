@@ -133,7 +133,7 @@ function runFullAmazonAnalysis() {
           }
         }
 
-        // === PRICE EXTRACTION (Enhanced multi-tier logic based on price.txt) ===
+        // === ENHANCED SERP PRICE EXTRACTION (Combining existing logic + price_serp.txt improvements) ===
         product.currentPrice = null;
         product.listPrice = null;
         
@@ -174,22 +174,50 @@ function runFullAmazonAnalysis() {
         
         const prices = [];
         
-        // Multi-tier extraction strategy based on price.txt
+        // FOUNDATIONAL PRINCIPLE: Scope limitation within product container (price_serp.txt key insight)
+        // Note: 'card' variable already represents the isolated product container div[data-asin="..."]
         
-        // Tier 1: Look for main buy box price components in search results
-        if (priceBlock) {
-          // Method A: Try to reconstruct from whole and fraction parts
-          const wholePart = priceBlock.querySelector('.a-price-whole');
-          const fractionPart = priceBlock.querySelector('.a-price-fraction');
-          if (wholePart && fractionPart) {
-            const reconstructedPrice = wholePart.textContent.trim() + fractionPart.textContent.trim();
+        // TIER 1A: Enhanced Component Reconstruction (price_serp.txt + existing logic)
+        // Try direct .a-price-whole + .a-price-fraction first (most reliable per price_serp.txt)
+        const wholePart = card.querySelector('.a-price-whole');
+        const fractionPart = card.querySelector('.a-price-fraction');
+        if (wholePart && fractionPart) {
+          const wholeText = wholePart.textContent.trim();
+          const fractionText = fractionPart.textContent.trim();
+          const reconstructedPrice = wholeText + fractionText; // e.g., "39." + "00" = "39.00"
+          const price = cleanPrice(reconstructedPrice);
+          if (price !== null) {
+            prices.push(price);
+          }
+        }
+        
+        // TIER 1B: Enhanced priceBlock reconstruction (existing logic enhanced with scoping)
+        if (prices.length === 0 && priceBlock) {
+          // Try to reconstruct from whole and fraction parts within priceBlock
+          const priceBlockWhole = priceBlock.querySelector('.a-price-whole');
+          const priceBlockFraction = priceBlock.querySelector('.a-price-fraction');
+          if (priceBlockWhole && priceBlockFraction) {
+            const reconstructedPrice = priceBlockWhole.textContent.trim() + priceBlockFraction.textContent.trim();
             const price = cleanPrice(reconstructedPrice);
+            if (price !== null && !prices.includes(price)) {
+              prices.push(price);
+            }
+          }
+        }
+        
+        // TIER 2A: Enhanced Screen Reader Text (price_serp.txt primary approach)
+        if (prices.length === 0) {
+          const offscreenPrice = card.querySelector('.a-price .a-offscreen');
+          if (offscreenPrice) {
+            const price = cleanPrice(offscreenPrice.textContent); // e.g., "$39.00"
             if (price !== null) {
               prices.push(price);
             }
           }
-          
-          // Method B: Try screen reader text
+        }
+        
+        // TIER 2B: Legacy priceBlock screen reader approach (existing logic)
+        if (prices.length === 0 && priceBlock) {
           const offscreenPrice = priceBlock.querySelector('.a-offscreen');
           if (offscreenPrice) {
             const price = cleanPrice(offscreenPrice.textContent);
@@ -199,58 +227,82 @@ function runFullAmazonAnalysis() {
           }
         }
         
-        // Tier 2: Look for format-specific prices (selected format)
-        const selectedFormat = card.querySelector('.swatchElement.selected .slot-price .a-color-price');
-        if (selectedFormat) {
-          const price = cleanPrice(selectedFormat.textContent);
-          if (price !== null && !prices.includes(price)) {
-            prices.push(price);
-          }
-        }
-        
-        // Tier 3: General fallback - look for any price elements
+        // TIER 3: Format-specific prices (existing logic - valuable for books with multiple formats)
         if (prices.length === 0) {
-          let priceSpans = [];
-          if (priceBlock) {
-            priceSpans = Array.from(priceBlock.querySelectorAll('span[class*="a-price"]'));
-          }
-          if (priceSpans.length === 0) {
-            const priceSection = card.querySelector('.s-price-instructions-style, .a-spacing-none > .a-row.a-color-base');
-            if (priceSection) {
-              priceSpans = Array.from(priceSection.querySelectorAll('.a-price'));
+          const selectedFormat = card.querySelector('.swatchElement.selected .slot-price .a-color-price');
+          if (selectedFormat) {
+            const price = cleanPrice(selectedFormat.textContent);
+            if (price !== null) {
+              prices.push(price);
             }
-          }
-          
-          priceSpans.forEach(span => {
-            const offscreenElement = span.querySelector('span[class="a-offscreen"]');
-            if (offscreenElement) {
-              const price = cleanPrice(offscreenElement.textContent);
-              if (price !== null && !prices.includes(price)) {
-                prices.push(price);
-              }
-            }
-          });
-          
-          // Final fallback: any element with price-related classes
-          if (prices.length === 0) {
-            const generalPriceElements = card.querySelectorAll('.a-color-price, .a-price .a-offscreen');
-            generalPriceElements.forEach(element => {
-              const price = cleanPrice(element.textContent);
-              if (price !== null && !prices.includes(price)) {
-                prices.push(price);
-              }
-            });
           }
         }
         
-        // Set prices using existing logic
+        // TIER 4: Enhanced general fallback with regex parsing (price_serp.txt + existing logic)
+        if (prices.length === 0) {
+          // Try main price container with regex (price_serp.txt approach)
+          const priceContainer = card.querySelector('.a-price');
+          if (priceContainer) {
+            const priceText = priceContainer.textContent;
+            // Use enhanced regex to find price patterns in concatenated text
+            const priceMatch = priceText.match(/\$?(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
+            if (priceMatch) {
+              const price = cleanPrice(priceMatch[0]);
+              if (price !== null) {
+                prices.push(price);
+              }
+            }
+          }
+          
+          // Fallback to existing comprehensive selector approach
+          if (prices.length === 0) {
+            let priceSpans = [];
+            if (priceBlock) {
+              priceSpans = Array.from(priceBlock.querySelectorAll('span[class*="a-price"]'));
+            }
+            if (priceSpans.length === 0) {
+              const priceSection = card.querySelector('.s-price-instructions-style, .a-spacing-none > .a-row.a-color-base');
+              if (priceSection) {
+                priceSpans = Array.from(priceSection.querySelectorAll('.a-price'));
+              }
+            }
+            
+            // Process found price spans
+            for (const span of priceSpans) {
+              const offscreenElement = span.querySelector('span[class="a-offscreen"]');
+              if (offscreenElement) {
+                const price = cleanPrice(offscreenElement.textContent);
+                if (price !== null && !prices.includes(price)) {
+                  prices.push(price);
+                  break; // Take first valid price to avoid duplicates
+                }
+              }
+            }
+            
+            // Final broad search within scoped container (maintaining scope principle)
+            if (prices.length === 0) {
+              const generalPriceElements = card.querySelectorAll('.a-color-price, .a-price .a-offscreen');
+              for (const element of generalPriceElements) {
+                const price = cleanPrice(element.textContent);
+                if (price !== null) {
+                  prices.push(price);
+                  break; // Take first valid price found (price_serp.txt principle)
+                }
+              }
+            }
+          }
+        }
+        
+        // Enhanced price setting logic (existing approach with better logging)
         if (prices.length > 0) {
           prices.sort((a, b) => a - b); // Sort ascending
           product.currentPrice = prices[0]; // Lowest price is the current price
           product.listPrice = prices[prices.length - 1]; // Highest price is the list price
           if (prices.length > 2) {
-              console.warn(`Product ${asin}: Found ${prices.length} prices, using lowest for current and highest for list:`, prices);
+            console.warn(`SERP Product ${asin}: Found ${prices.length} prices, using lowest for current and highest for list:`, prices);
           }
+        } else {
+          console.warn(`SERP Product ${asin}: No valid prices found despite enhanced extraction strategy`);
         }
 
         // === IMAGE URL EXTRACTION ===
