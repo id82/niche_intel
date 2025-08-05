@@ -116,7 +116,7 @@ chrome.action.onClicked.addListener(async (tab) => {
         console.log("background.js: Active tab found:", tab?.url);
         
         if (!tab || !tab.url || !tab.url.includes("amazon.")) {
-            console.error("background.js: Not an Amazon page.");
+            console.log("NicheIntel Pro: Main search scraping skipped - Not an Amazon page:", tab?.url || 'No URL');
             return;
         }
         
@@ -124,8 +124,13 @@ chrome.action.onClicked.addListener(async (tab) => {
         const url = new URL(tab.url);
         console.log("background.js: Checking URL path:", url.pathname, "and search params:", url.searchParams.has('k'));
         
-        if (!url.pathname.includes('/s') || !url.searchParams.has('k')) {
-            console.error("background.js: Not an Amazon search page.");
+        if (!url.pathname.includes('/s')) {
+            console.log("NicheIntel Pro: Main search scraping skipped - Not a search results page (missing /s in path):", url.pathname);
+            return;
+        }
+        
+        if (!url.searchParams.has('k')) {
+            console.log("NicheIntel Pro: Main search scraping skipped - No search keyword parameter (missing k= parameter)");
             return;
         }
         
@@ -186,7 +191,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log("background.js: Active tab found:", activeTab?.url);
                 
                 if (!activeTab || !activeTab.url || !activeTab.url.includes("amazon.")) {
-                    console.error("background.js: Not an Amazon page.");
+                    console.log("NicheIntel Pro: Main search scraping skipped - Not an Amazon page:", activeTab?.url || 'No URL');
                     sendResponse({ success: false, message: "Error: Not an Amazon page." });
                     return;
                 }
@@ -195,8 +200,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const url = new URL(activeTab.url);
                 console.log("background.js: Checking URL path:", url.pathname, "and search params:", url.searchParams.has('k'));
                 
-                if (!url.pathname.includes('/s') || !url.searchParams.has('k')) {
-                    console.error("background.js: Not an Amazon search page.");
+                if (!url.pathname.includes('/s')) {
+                    console.log("NicheIntel Pro: Main search scraping skipped - Not a search results page (missing /s in path):", url.pathname);
+                    sendResponse({ 
+                        success: false, 
+                        message: "Please navigate to an Amazon search page first.\n\nSearch for products using Amazon's search box, then run the analysis from the search results page.\n\nExample: Search for 'inspiring stories for kids' and then click the extension." 
+                    });
+                    return;
+                }
+                
+                if (!url.searchParams.has('k')) {
+                    console.log("NicheIntel Pro: Main search scraping skipped - No search keyword parameter (missing k= parameter)");
                     sendResponse({ 
                         success: false, 
                         message: "Please navigate to an Amazon search page first.\n\nSearch for products using Amazon's search box, then run the analysis from the search results page.\n\nExample: Search for 'inspiring stories for kids' and then click the extension." 

@@ -2,7 +2,7 @@
 // START OF SCRIPT: serp_classifier_asin_extractor.js
 // ===================================================================================
 function runFullAmazonAnalysis() {
-  console.log("scrapers.js: Starting runFullAmazonAnalysis.");
+  console.log("NicheIntel Pro: Main search scraping starting - runFullAmazonAnalysis initiated");
 
   // ===================================================================
   // STEP 1: EXTRACT DETAILED PRODUCT INFO FROM ALL CARDS (v2.4 LOGIC)
@@ -11,7 +11,11 @@ function runFullAmazonAnalysis() {
     console.log("scrapers.js: Starting extractProductInfo.");
     const productInfo = {};
     const productCards = document.querySelectorAll('div[data-component-type="s-search-result"]');
-    console.log(`scrapers.js: Found ${productCards.length} product cards.`);
+    if (productCards.length === 0) {
+      console.log("NicheIntel Pro: Main search scraping skipped - No product cards found (no search results on page)");
+    } else {
+      console.log(`NicheIntel Pro: Main search scraping proceeding - Found ${productCards.length} product cards to analyze`);
+    }
 
     productCards.forEach(card => {
       try {
@@ -337,7 +341,7 @@ function runFullAmazonAnalysis() {
   const { orderedResults, positions } = classifyAndMapPositions();
   const { authorAnalysis, asinAnalysis } = analyzePageOwnership(productInfo, positions);
 
-  console.log("scrapers.js: Finished runFullAmazonAnalysis.");
+  console.log(`NicheIntel Pro: Main search scraping completed successfully - Found ${Object.keys(productInfo).length} valid book products`);
   return { orderedResults, positions, productInfo, authorAnalysis, asinAnalysis };
 }
 // ===================================================================================
