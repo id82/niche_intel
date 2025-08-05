@@ -64,21 +64,35 @@ function extractBookData() {
         data.title = titleElement.textContent.trim();
     }
     
-    // Extract prices using the same logic as scrapers.js extractAmazonBookFormats()
+    // Enhanced price extraction using multi-tier strategy from price.txt
     const cleanPrice = (text) => {
         if (!text) return null;
+        // Remove whitespace
+        text = text.trim();
+        // Match various price formats including international (1.234,56 or 1,234.56)
         const match = text.match(/(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
         if (!match) return null;
 
-        let priceStr = match[0].replace(/[$,€£¥]/g, ''); // Remove currency symbols
+        let priceStr = match[0].replace(/[$,€£¥₹₩¥]/g, ''); // Remove currency symbols
+        // Handle different decimal separators based on format
         if (priceStr.includes(',') && priceStr.includes('.')) {
             if (priceStr.lastIndexOf(',') > priceStr.lastIndexOf('.')) {
+                // European format: 1.234,56
                 priceStr = priceStr.replace(/\./g, '').replace(',', '.');
             } else {
+                // US format: 1,234.56
                 priceStr = priceStr.replace(/,/g, '');
             }
-        } else {
-            priceStr = priceStr.replace(',', '.');
+        } else if (priceStr.includes(',')) {
+            // Could be European decimal (12,34) or US thousands (1,234)
+            const parts = priceStr.split(',');
+            if (parts.length === 2 && parts[1].length <= 2) {
+                // European decimal format
+                priceStr = priceStr.replace(',', '.');
+            } else {
+                // US thousands format
+                priceStr = priceStr.replace(/,/g, '');
+            }
         }
         
         const price = parseFloat(priceStr);
@@ -87,15 +101,50 @@ function extractBookData() {
     
     const prices = [];
     
-    // Extract prices from tmm-grid-swatch elements (format selection area)
+    // Multi-tier extraction strategy based on price.txt
+    
+    // Tier 1: Primary Target - The Main Buy Box Price (adapted for individual pages)
+    const buyBoxContainer = document.querySelector('#Northstar-Buybox, #corePriceDisplay_desktop_feature_div');
+    if (buyBoxContainer) {
+        // Method A: Reconstruct from price components
+        const wholePart = buyBoxContainer.querySelector('.a-price-whole');
+        const fractionPart = buyBoxContainer.querySelector('.a-price-fraction');
+        if (wholePart && fractionPart) {
+            const reconstructedPrice = wholePart.textContent.trim() + fractionPart.textContent.trim();
+            const price = cleanPrice(reconstructedPrice);
+            if (price !== null) {
+                prices.push(price);
+            }
+        }
+        
+        // Method B: Screen reader text
+        const offscreenPrice = buyBoxContainer.querySelector('.aok-offscreen, .a-offscreen');
+        if (offscreenPrice) {
+            const price = cleanPrice(offscreenPrice.textContent);
+            if (price !== null && !prices.includes(price)) {
+                prices.push(price);
+            }
+        }
+    }
+    
+    // Tier 2: Secondary Target - The Selected Format Price
+    const selectedSwatch = document.querySelector('.swatchElement.selected .slot-price .a-color-price, [id^="tmm-grid-swatch-"].selected .slot-price');
+    if (selectedSwatch) {
+        const price = cleanPrice(selectedSwatch.textContent);
+        if (price !== null && !prices.includes(price)) {
+            prices.push(price);
+        }
+    }
+    
+    // Enhanced format selection area extraction
     document.querySelectorAll('[id^="tmm-grid-swatch-"]').forEach(swatch => {
         const isSelected = swatch.classList.contains('selected');
         if (isSelected) {
-            // Extract price from selected format
+            // Extract price from selected format using aria-label
             const slotPrice = swatch.querySelector('.slot-price span[aria-label]');
             if (slotPrice) {
                 const price = cleanPrice(slotPrice.getAttribute('aria-label'));
-                if (price !== null) {
+                if (price !== null && !prices.includes(price)) {
                     prices.push(price);
                 }
             }
@@ -121,7 +170,20 @@ function extractBookData() {
         }
     }
     
-    // Fallback to legacy price selectors if no prices found
+    // Tier 3: General Fallback - broader search within buy box area
+    if (prices.length === 0) {
+        const buyBoxArea = document.querySelector('#Northstar-Buybox') || document.body;
+        const generalPriceElements = buyBoxArea.querySelectorAll('.a-color-price');
+        // Take the first element found as per price.txt strategy
+        if (generalPriceElements.length > 0) {
+            const price = cleanPrice(generalPriceElements[0].textContent);
+            if (price !== null && !prices.includes(price)) {
+                prices.push(price);
+            }
+        }
+    }
+    
+    // Final fallback to legacy price selectors if still no prices found
     if (prices.length === 0) {
         const legacySelectors = [
             'span.a-price.a-text-price.a-size-medium.apexPriceToPay .a-offscreen',

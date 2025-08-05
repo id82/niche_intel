@@ -133,30 +133,117 @@ function runFullAmazonAnalysis() {
           }
         }
 
-        // === PRICE EXTRACTION (Enhanced logic) ===
+        // === PRICE EXTRACTION (Enhanced multi-tier logic based on price.txt) ===
         product.currentPrice = null;
         product.listPrice = null;
-        let priceSpans = [];
-        if (priceBlock) {
-          priceSpans = Array.from(priceBlock.querySelectorAll('span[class*="a-price"]'));
-        }
-        if (priceSpans.length === 0) {
-          const priceSection = card.querySelector('.s-price-instructions-style, .a-spacing-none > .a-row.a-color-base');
-          if (priceSection) {
-            priceSpans = Array.from(priceSection.querySelectorAll('.a-price'));
-          }
-        }
-        const prices = [];
-        priceSpans.forEach(span => {
-          const offscreenElement = span.querySelector('span[class="a-offscreen"]');
-          if (offscreenElement) {
-            const cleanPrice = offscreenElement.textContent.replace(/[$,€£¥]/g, '');
-            const numericPrice = parseFloat(cleanPrice);
-            if (!isNaN(numericPrice) && numericPrice > 0) {
-              prices.push(numericPrice);
+        
+        // Enhanced price cleaning function (handles international formats)
+        const cleanPrice = (text) => {
+          if (!text) return null;
+          // Remove whitespace
+          text = text.trim();
+          // Match various price formats including international (1.234,56 or 1,234.56)
+          const match = text.match(/(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
+          if (!match) return null;
+
+          let priceStr = match[0].replace(/[$,€£¥₹₩¥]/g, ''); // Remove currency symbols
+          // Handle different decimal separators based on format
+          if (priceStr.includes(',') && priceStr.includes('.')) {
+            if (priceStr.lastIndexOf(',') > priceStr.lastIndexOf('.')) {
+              // European format: 1.234,56
+              priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+            } else {
+              // US format: 1,234.56
+              priceStr = priceStr.replace(/,/g, '');
+            }
+          } else if (priceStr.includes(',')) {
+            // Could be European decimal (12,34) or US thousands (1,234)
+            const parts = priceStr.split(',');
+            if (parts.length === 2 && parts[1].length <= 2) {
+              // European decimal format
+              priceStr = priceStr.replace(',', '.');
+            } else {
+              // US thousands format
+              priceStr = priceStr.replace(/,/g, '');
             }
           }
-        });
+          
+          const price = parseFloat(priceStr);
+          return isNaN(price) ? null : price;
+        };
+        
+        const prices = [];
+        
+        // Multi-tier extraction strategy based on price.txt
+        
+        // Tier 1: Look for main buy box price components in search results
+        if (priceBlock) {
+          // Method A: Try to reconstruct from whole and fraction parts
+          const wholePart = priceBlock.querySelector('.a-price-whole');
+          const fractionPart = priceBlock.querySelector('.a-price-fraction');
+          if (wholePart && fractionPart) {
+            const reconstructedPrice = wholePart.textContent.trim() + fractionPart.textContent.trim();
+            const price = cleanPrice(reconstructedPrice);
+            if (price !== null) {
+              prices.push(price);
+            }
+          }
+          
+          // Method B: Try screen reader text
+          const offscreenPrice = priceBlock.querySelector('.a-offscreen');
+          if (offscreenPrice) {
+            const price = cleanPrice(offscreenPrice.textContent);
+            if (price !== null && !prices.includes(price)) {
+              prices.push(price);
+            }
+          }
+        }
+        
+        // Tier 2: Look for format-specific prices (selected format)
+        const selectedFormat = card.querySelector('.swatchElement.selected .slot-price .a-color-price');
+        if (selectedFormat) {
+          const price = cleanPrice(selectedFormat.textContent);
+          if (price !== null && !prices.includes(price)) {
+            prices.push(price);
+          }
+        }
+        
+        // Tier 3: General fallback - look for any price elements
+        if (prices.length === 0) {
+          let priceSpans = [];
+          if (priceBlock) {
+            priceSpans = Array.from(priceBlock.querySelectorAll('span[class*="a-price"]'));
+          }
+          if (priceSpans.length === 0) {
+            const priceSection = card.querySelector('.s-price-instructions-style, .a-spacing-none > .a-row.a-color-base');
+            if (priceSection) {
+              priceSpans = Array.from(priceSection.querySelectorAll('.a-price'));
+            }
+          }
+          
+          priceSpans.forEach(span => {
+            const offscreenElement = span.querySelector('span[class="a-offscreen"]');
+            if (offscreenElement) {
+              const price = cleanPrice(offscreenElement.textContent);
+              if (price !== null && !prices.includes(price)) {
+                prices.push(price);
+              }
+            }
+          });
+          
+          // Final fallback: any element with price-related classes
+          if (prices.length === 0) {
+            const generalPriceElements = card.querySelectorAll('.a-color-price, .a-price .a-offscreen');
+            generalPriceElements.forEach(element => {
+              const price = cleanPrice(element.textContent);
+              if (price !== null && !prices.includes(price)) {
+                prices.push(price);
+              }
+            });
+          }
+        }
+        
+        // Set prices using existing logic
         if (prices.length > 0) {
           prices.sort((a, b) => a - b); // Sort ascending
           product.currentPrice = prices[0]; // Lowest price is the current price
@@ -752,18 +839,32 @@ function runFullProductPageExtraction() {
         
         const cleanPrice = (text) => {
             if (!text) return null;
+            // Remove whitespace
+            text = text.trim();
+            // Match various price formats including international (1.234,56 or 1,234.56)
             const match = text.match(/(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
             if (!match) return null;
-    
-            let priceStr = match[0].replace(/[$,€£¥]/g, ''); // Remove currency symbols
+
+            let priceStr = match[0].replace(/[$,€£¥₹₩¥]/g, ''); // Remove currency symbols
+            // Handle different decimal separators based on format
             if (priceStr.includes(',') && priceStr.includes('.')) {
                 if (priceStr.lastIndexOf(',') > priceStr.lastIndexOf('.')) {
+                    // European format: 1.234,56
                     priceStr = priceStr.replace(/\./g, '').replace(',', '.');
                 } else {
+                    // US format: 1,234.56
                     priceStr = priceStr.replace(/,/g, '');
                 }
-            } else {
-                priceStr = priceStr.replace(',', '.');
+            } else if (priceStr.includes(',')) {
+                // Could be European decimal (12,34) or US thousands (1,234)
+                const parts = priceStr.split(',');
+                if (parts.length === 2 && parts[1].length <= 2) {
+                    // European decimal format
+                    priceStr = priceStr.replace(',', '.');
+                } else {
+                    // US thousands format
+                    priceStr = priceStr.replace(/,/g, '');
+                }
             }
             
             const price = parseFloat(priceStr);
@@ -1422,21 +1523,35 @@ function parseProductPageFromHTML(htmlString, url) {
         return details;
     }
     
-    // --- Adapted Helper Functions ---
+    // --- Enhanced Helper Functions (consistent with price.txt strategy) ---
     const cleanPrice = (text) => {
         if (!text) return null;
+        // Remove whitespace
+        text = text.trim();
+        // Match various price formats including international (1.234,56 or 1,234.56)
         const match = text.match(/(\d{1,3}(?:[.,]\d{3})*[,.]\d{2}|\d+[,.]\d{2}|\d+)/);
         if (!match) return null;
 
-        let priceStr = match[0].replace(/[$,€£¥]/g, ''); // Remove currency symbols
+        let priceStr = match[0].replace(/[$,€£¥₹₩¥]/g, ''); // Remove currency symbols
+        // Handle different decimal separators based on format
         if (priceStr.includes(',') && priceStr.includes('.')) {
             if (priceStr.lastIndexOf(',') > priceStr.lastIndexOf('.')) {
+                // European format: 1.234,56
                 priceStr = priceStr.replace(/\./g, '').replace(',', '.');
             } else {
+                // US format: 1,234.56
                 priceStr = priceStr.replace(/,/g, '');
             }
-        } else {
-            priceStr = priceStr.replace(',', '.');
+        } else if (priceStr.includes(',')) {
+            // Could be European decimal (12,34) or US thousands (1,234)
+            const parts = priceStr.split(',');
+            if (parts.length === 2 && parts[1].length <= 2) {
+                // European decimal format
+                priceStr = priceStr.replace(',', '.');
+            } else {
+                // US thousands format
+                priceStr = priceStr.replace(/,/g, '');
+            }
         }
         
         const price = parseFloat(priceStr);
@@ -1500,15 +1615,41 @@ function parseProductPageFromHTML(htmlString, url) {
 
             if (!asin) return;
 
-            // --- New, more robust price extraction ---
+            // --- Enhanced multi-tier price extraction (based on price.txt) ---
             const prices = [];
             const isKU = !!swatch.querySelector('i.a-icon-kindle-unlimited');
 
-            // Extract main price from the slot
+            // Scope limitation: prioritize buy box area first
+            const buyBoxContainer = doc.querySelector('#Northstar-Buybox, #corePriceDisplay_desktop_feature_div');
+            
+            // For selected format, try Tier 1 strategies from buy box
+            if (isSelected && buyBoxContainer) {
+                // Method A: Reconstruct from price components
+                const wholePart = buyBoxContainer.querySelector('.a-price-whole');
+                const fractionPart = buyBoxContainer.querySelector('.a-price-fraction');
+                if (wholePart && fractionPart) {
+                    const reconstructedPrice = wholePart.textContent.trim() + fractionPart.textContent.trim();
+                    const price = cleanPrice(reconstructedPrice);
+                    if (price !== null) {
+                        prices.push({ price: price, type: 'price' });
+                    }
+                }
+                
+                // Method B: Screen reader text from buy box
+                const offscreenPrice = buyBoxContainer.querySelector('.aok-offscreen, .a-offscreen');
+                if (offscreenPrice) {
+                    const price = cleanPrice(offscreenPrice.textContent);
+                    if (price !== null && !prices.some(p => p.price === price)) {
+                        prices.push({ price: price, type: 'price' });
+                    }
+                }
+            }
+
+            // Tier 2: Format-specific price extraction
             const slotPriceEl = swatch.querySelector('.slot-price span[aria-label]');
             if (slotPriceEl) {
                 const mainPrice = cleanPrice(slotPriceEl.getAttribute('aria-label'));
-                if (mainPrice !== null) {
+                if (mainPrice !== null && !prices.some(p => p.price === mainPrice)) {
                     prices.push({ price: mainPrice, type: isKU ? 'ku_price' : 'price' });
                 }
             }
@@ -1523,13 +1664,26 @@ function parseProductPageFromHTML(htmlString, url) {
                 }
             }
 
-            // For the selected format, also check the main page's strikethrough price
+            // For the selected format, also check the main page's strikethrough price (within buy box scope)
             if (isSelected) {
-                const listPriceEl = doc.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"] span');
+                const listPriceEl = buyBoxContainer ? 
+                    buyBoxContainer.querySelector('span[class="a-price a-text-price"] span') :
+                    doc.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"] span');
                 if (listPriceEl) {
                     const listPrice = cleanPrice(listPriceEl.textContent);
                     if (listPrice !== null && !prices.some(p => p.price === listPrice)) {
                         prices.push({ price: listPrice, type: 'price' });
+                    }
+                }
+            }
+            
+            // Tier 3: General fallback within buy box scope (for selected format only)
+            if (isSelected && prices.length === 0 && buyBoxContainer) {
+                const generalPriceElements = buyBoxContainer.querySelectorAll('.a-color-price');
+                if (generalPriceElements.length > 0) {
+                    const price = cleanPrice(generalPriceElements[0].textContent);
+                    if (price !== null && !prices.some(p => p.price === price)) {
+                        prices.push({ price: price, type: 'price' });
                     }
                 }
             }
