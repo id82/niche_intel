@@ -657,7 +657,7 @@ function updateTableRow(asin, data) {
     updateCell(`bsr-${asin}`, bsr, val => val ? val.toLocaleString() : 'N/A');
     updateCell(`days-${asin}`, daysOnMarket, val => val !== null ? val.toLocaleString() : 'N/A');
     updateCell(`length-${asin}`, pageCount, val => val ? val.toLocaleString() : 'N/A');
-    updateCell(`publisher-${asin}`, publisher);
+    updateCell(`publisher-${asin}`, publisher, val => val || 'Independently published');
     updateCell(`trim-${asin}`, largeTrim, val => val ? 'Yes' : 'No');
     updateCell(`aplus-${asin}`, aplusCount, val => val || 0);
     updateCell(`ugc-videos-${asin}`, ugcVideoCount, val => val || 0);
