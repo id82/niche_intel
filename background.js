@@ -37,7 +37,7 @@ async function enableResourceBlocking() {
                     "amazon.it", "amazon.es", "amazon.nl", "amazon.com.au", 
                     "amazon.co.jp", "amazon.pl", "amazon.se", "amazon.ca"
                 ],
-                "resourceTypes": ["image", "font", "media", "stylesheet"]
+                "resourceTypes": ["image", "font", "media"]
             }
         };
 
