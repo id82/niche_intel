@@ -615,6 +615,11 @@ function updateTableRow(asin, data) {
     const avgRating = get(['customer_reviews', 'average_rating'], data);
     const reviewImageCount = get(['customer_reviews', 'review_image_count'], data);
     const reviewCount = get(['customer_reviews', 'review_count'], data);
+    console.log(`report.js: Review count extraction for ${asin}:`, {
+        reviewCount,
+        customerReviews: data?.customer_reviews,
+        hasData: !!data
+    });
     const bsr = get(['product_details', 'bsr'], data);
     console.log(`report.js: BSR extraction for ${asin}:`, {
         bsrValue: bsr,
@@ -655,7 +660,10 @@ function updateTableRow(asin, data) {
     updateCell(`rating-${asin}`, avgRating, val => val || 0);
     updateCell(`review-images-${asin}`, reviewImageCount, val => val || 0);
     if (reviewCount) {
+        console.log(`report.js: Updating review count cell for ${asin} with value:`, reviewCount);
         updateCell(`reviews-${asin}`, reviewCount, val => val.toLocaleString());
+    } else {
+        console.log(`report.js: No review count to update for ${asin}`);
     }
     console.log(`report.js: About to update BSR cell for ${asin}. BSR value:`, bsr, 'Type:', typeof bsr);
     updateCell(`bsr-${asin}`, bsr, val => val ? val.toLocaleString() : 'N/A');
