@@ -98,6 +98,12 @@ function sleep(ms) {
  * Automatically set the delivery location to target zip code
  */
 async function autoSetLocation() {
+    // Only run in incognito windows
+    if (!chrome.extension.inIncognitoContext) {
+        console.log("NicheIntel Pro Location: Not incognito, skipping location auto-set");
+        return;
+    }
+
     // Only run on amazon.com
     if (!isAmazonUS()) {
         console.log("NicheIntel Pro Location: Not amazon.com, skipping location auto-set");
