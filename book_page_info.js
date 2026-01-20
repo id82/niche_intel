@@ -17,7 +17,8 @@ const LOCATION_CONFIG = {
         zipCodeInputAlt: 'input[data-action="GLUXPostalInputAction"]',
         applyButton: 'input[aria-labelledby="GLUXZipUpdate-announce"]',
         confirmButton: '#GLUXConfirmClose',
-        confirmButtonAlt: 'input[aria-labelledby="GLUXConfirmClose-announce"]'
+        confirmButtonAlt: 'input[aria-labelledby="GLUXConfirmClose-announce"]',
+        closeButtonFallback: 'button[data-action="a-popover-close"].a-button-close'
     }
 };
 
@@ -156,7 +157,7 @@ async function autoSetLocation() {
         applyButton.click();
         console.log("NicheIntel Pro Location: Clicked Apply button");
 
-        // Step 4: Wait for and click the Confirm/Continue button
+        // Step 4: Wait for and click the Confirm/Continue button (or close button as fallback)
         await sleep(1000); // Wait for confirmation modal
 
         let confirmButton = await waitForElement(LOCATION_CONFIG.selectors.confirmButton, 3000)
@@ -167,12 +168,20 @@ async function autoSetLocation() {
                 .catch(() => null);
         }
 
+        // Fallback to close button if confirm button not found
+        if (!confirmButton) {
+            confirmButton = document.querySelector(LOCATION_CONFIG.selectors.closeButtonFallback);
+            if (confirmButton) {
+                console.log("NicheIntel Pro Location: Using close button fallback");
+            }
+        }
+
         if (confirmButton) {
             confirmButton.click();
-            console.log("NicheIntel Pro Location: Clicked Confirm button");
+            console.log("NicheIntel Pro Location: Clicked Confirm/Close button");
             console.log("NicheIntel Pro Location: Location successfully updated to", LOCATION_CONFIG.targetZipCode);
         } else {
-            console.log("NicheIntel Pro Location: Confirm button not found, location may still be updated");
+            console.log("NicheIntel Pro Location: No confirm or close button found, location may still be updated");
         }
 
     } catch (error) {
