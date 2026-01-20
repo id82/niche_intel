@@ -104,13 +104,31 @@ async function autoSetLocation() {
         return;
     }
 
+    // Prevent running multiple times per session using sessionStorage
+    const sessionKey = 'nicheIntelLocationAttempted';
+    if (sessionStorage.getItem(sessionKey)) {
+        console.log("NicheIntel Pro Location: Already attempted this session, skipping");
+        return;
+    }
+
     // Check if location is already set
     if (isLocationAlreadySet()) {
         console.log("NicheIntel Pro Location: Location already set to target, skipping");
         return;
     }
 
+    // Mark that we've attempted location setting this session
+    sessionStorage.setItem(sessionKey, 'true');
     console.log("NicheIntel Pro Location: Starting automatic location update...");
+
+    // Helper to close modal on abort
+    const closeModal = () => {
+        const closeBtn = document.querySelector(LOCATION_CONFIG.selectors.closeButton);
+        if (closeBtn) {
+            closeBtn.click();
+            console.log("NicheIntel Pro Location: Closed modal after abort");
+        }
+    };
 
     try {
         // Step 1: Click the location trigger to open the modal
@@ -124,18 +142,19 @@ async function autoSetLocation() {
         console.log("NicheIntel Pro Location: Clicked location trigger");
 
         // Step 2: Wait for and fill in the zip code input
-        await sleep(500); // Wait for modal animation
+        await sleep(1500); // Wait for modal animation (increased from 500ms)
 
-        let zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInput, 3000)
+        let zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInput, 5000)
             .catch(() => null);
 
         if (!zipInput) {
-            zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInputAlt, 2000)
+            zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInputAlt, 3000)
                 .catch(() => null);
         }
 
         if (!zipInput) {
             console.log("NicheIntel Pro Location: Zip code input not found, aborting");
+            closeModal();
             return;
         }
 
@@ -152,6 +171,7 @@ async function autoSetLocation() {
         const applyButton = document.querySelector(LOCATION_CONFIG.selectors.applyButton);
         if (!applyButton) {
             console.log("NicheIntel Pro Location: Apply button not found, aborting");
+            closeModal();
             return;
         }
 
