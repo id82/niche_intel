@@ -1065,11 +1065,13 @@ function runFullProductPageExtraction() {
     function extractReviewCount(){
         let review_count = null;
         try {
-            const reviewCountAriaLabel = document.querySelector('span[id="acrCustomerReviewText"]')?.ariaLabel;
-            if (reviewCountAriaLabel) {
-                const countStr = reviewCountAriaLabel.split(" ", 2)[0].replaceAll(",", "");
+            const reviewCountText = document.querySelector('span[id="acrCustomerReviewText"]')?.textContent;
+            if (reviewCountText) {
+                // Text is like "1,028 ratings" - extract the number
+                const countStr = reviewCountText.split(" ")[0].replace(/,/g, "");
                 review_count = parseInt(countStr, 10);
                 if (isNaN(review_count)) review_count = null;
+                console.log("NicheIntel Pro: Extracted review count:", review_count, "from text:", reviewCountText);
             }
         } catch(e) {
             console.warn("Could not extract review count.", e);
