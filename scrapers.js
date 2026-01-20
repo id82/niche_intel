@@ -105,13 +105,12 @@ function runFullAmazonAnalysis() {
           }
         }
 
-        // === REVIEW COUNT EXTRACTION (Enhanced logic) ===
-        // Helper function to parse abbreviated review counts like "(25.3K)" or "1.2M"
+        // === REVIEW COUNT EXTRACTION ===
+        // Parse abbreviated counts like "(25.3K)" or "1.2M" from SERP
+        // Exact counts will be updated later from individual page loads
         const parseReviewCount = (text) => {
           if (!text) return null;
-          // Remove parentheses and whitespace
           text = text.replace(/[()]/g, '').trim();
-          // Handle K (thousands) and M (millions) suffixes
           const match = text.match(/^([\d,.]+)\s*([KkMm])?$/);
           if (!match) return null;
           let num = parseFloat(match[1].replace(/,/g, ''));
@@ -123,21 +122,7 @@ function runFullAmazonAnalysis() {
         };
 
         product.reviewCount = null;
-
-        // PRIORITY 1: aria-label has the exact count (e.g., "1,028 ratings" instead of "1K")
-        const reviewLinkWithAria = card.querySelector('a[aria-label*="ratings"]');
-        if (reviewLinkWithAria) {
-          const ariaLabel = reviewLinkWithAria.getAttribute('aria-label');
-          if (ariaLabel) {
-            const match = ariaLabel.match(/([\d,]+)\s*ratings?/i);
-            if (match) {
-              product.reviewCount = parseInt(match[1].replace(/,/g, '')) || null;
-            }
-          }
-        }
-
-        // PRIORITY 2: Try reviewsBlock span (may be abbreviated like "25.3K")
-        if (product.reviewCount === null && reviewsBlock) {
+        if (reviewsBlock) {
           const reviewCountBlock = reviewsBlock.querySelector('[data-csa-c-content-id*="ratings-count"]');
           if (reviewCountBlock) {
             const reviewSpan = reviewCountBlock.querySelector('span');
@@ -146,16 +131,15 @@ function runFullAmazonAnalysis() {
             }
           }
         }
-
-        // PRIORITY 3: Fallback to underline text in review link
-        if (product.reviewCount === null && reviewLinkWithAria) {
-          const reviewSpan = reviewLinkWithAria.querySelector('span.s-underline-text');
-          if (reviewSpan) {
-            product.reviewCount = parseReviewCount(reviewSpan.textContent);
+        if (product.reviewCount === null) {
+          const reviewElement = card.querySelector('a[aria-label*="ratings"]');
+          if (reviewElement) {
+            const reviewSpan = reviewElement.querySelector('span.s-underline-text');
+            if (reviewSpan) {
+              product.reviewCount = parseReviewCount(reviewSpan.textContent);
+            }
           }
         }
-
-        // PRIORITY 4: Generic underline text fallback
         if (product.reviewCount === null) {
           const genericReviewElement = card.querySelector('.a-size-base.s-underline-text');
           if (genericReviewElement) {

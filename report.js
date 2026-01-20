@@ -307,7 +307,7 @@ function renderInitialTable(serpData, asinsToProcess, container, currentDomain) 
                     <div class="author">${(product.authors && product.authors.length > 0) ? product.authors.join(', ') : 'N/A'}</div>
                 </td>
                 <td id="price-${asin}" class="placeholder">...</td>
-                <td>${(product.reviewCount || 0).toLocaleString()}</td>
+                <td id="reviews-${asin}">${(product.reviewCount || 0).toLocaleString()}</td>
                 <td id="rating-${asin}" class="placeholder">...</td>
                 <td id="review-images-${asin}" class="placeholder">...</td>
                 <td id="formats-${asin}" class="placeholder">...</td>
@@ -614,6 +614,7 @@ function updateTableRow(asin, data) {
     const formatCount = get(['formats'], data)?.length;
     const avgRating = get(['customer_reviews', 'average_rating'], data);
     const reviewImageCount = get(['customer_reviews', 'review_image_count'], data);
+    const reviewCount = get(['customer_reviews', 'review_count'], data);
     const bsr = get(['product_details', 'bsr'], data);
     console.log(`report.js: BSR extraction for ${asin}:`, {
         bsrValue: bsr,
@@ -653,6 +654,9 @@ function updateTableRow(asin, data) {
     updateCell(`formats-${asin}`, formatCount, val => val || 0);
     updateCell(`rating-${asin}`, avgRating, val => val || 0);
     updateCell(`review-images-${asin}`, reviewImageCount, val => val || 0);
+    if (reviewCount) {
+        updateCell(`reviews-${asin}`, reviewCount, val => val.toLocaleString());
+    }
     console.log(`report.js: About to update BSR cell for ${asin}. BSR value:`, bsr, 'Type:', typeof bsr);
     updateCell(`bsr-${asin}`, bsr, val => val ? val.toLocaleString() : 'N/A');
     updateCell(`days-${asin}`, daysOnMarket, val => val !== null ? val.toLocaleString() : 'N/A');
