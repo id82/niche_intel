@@ -154,13 +154,26 @@ async function autoSetLocation() {
         console.log("NicheIntel Pro Location: Clicked location trigger");
 
         // Step 2: Wait for and fill in the zip code input
-        await sleep(1500); // Wait for modal animation (increased from 500ms)
+        await sleep(1500); // Wait for modal animation
 
-        let zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInput, 5000)
+        let zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInput, 3000)
             .catch(() => null);
 
+        // If modal didn't open, try the SELECT_LOCATION button as fallback
         if (!zipInput) {
-            zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInputAlt, 3000)
+            console.log("NicheIntel Pro Location: Zip input not found, checking for SELECT_LOCATION button");
+            const selectLocationBtn = document.querySelector('input[data-action-type="SELECT_LOCATION"][class="a-button-input"]');
+            if (selectLocationBtn) {
+                console.log("NicheIntel Pro Location: Found SELECT_LOCATION button, clicking it");
+                selectLocationBtn.click();
+                await sleep(1500);
+                zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInput, 3000)
+                    .catch(() => null);
+            }
+        }
+
+        if (!zipInput) {
+            zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInputAlt, 2000)
                 .catch(() => null);
         }
 
