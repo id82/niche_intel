@@ -16,9 +16,10 @@ const LOCATION_CONFIG = {
         zipCodeInput: '#GLUXZipUpdateInput',
         zipCodeInputAlt: 'input[data-action="GLUXPostalInputAction"]',
         applyButton: 'input[aria-labelledby="GLUXZipUpdate-announce"]',
-        confirmButton: '#GLUXConfirmClose',
-        confirmButtonAlt: 'input[aria-labelledby="GLUXConfirmClose-announce"]',
-        closeButtonFallback: 'button[data-action="a-popover-close"].a-button-close'
+        // Done button - the actual clickable button element
+        doneButton: 'button[name="glowDoneButton"]',
+        // Close (X) button - fallback
+        closeButton: 'button[data-action="a-popover-close"][aria-label="Close"]'
     }
 };
 
@@ -157,31 +158,28 @@ async function autoSetLocation() {
         applyButton.click();
         console.log("NicheIntel Pro Location: Clicked Apply button");
 
-        // Step 4: Wait for and click the Confirm/Continue button (or close button as fallback)
-        await sleep(1000); // Wait for confirmation modal
+        // Step 4: Wait for and click the Done button (or close button as fallback)
+        await sleep(1000); // Wait for modal to update
 
-        let confirmButton = await waitForElement(LOCATION_CONFIG.selectors.confirmButton, 3000)
+        let closeButton = await waitForElement(LOCATION_CONFIG.selectors.doneButton, 3000)
             .catch(() => null);
 
-        if (!confirmButton) {
-            confirmButton = await waitForElement(LOCATION_CONFIG.selectors.confirmButtonAlt, 2000)
-                .catch(() => null);
-        }
-
-        // Fallback to close button if confirm button not found
-        if (!confirmButton) {
-            confirmButton = document.querySelector(LOCATION_CONFIG.selectors.closeButtonFallback);
-            if (confirmButton) {
-                console.log("NicheIntel Pro Location: Using close button fallback");
+        if (closeButton) {
+            console.log("NicheIntel Pro Location: Found Done button");
+        } else {
+            // Fallback to X close button
+            closeButton = document.querySelector(LOCATION_CONFIG.selectors.closeButton);
+            if (closeButton) {
+                console.log("NicheIntel Pro Location: Using X close button fallback");
             }
         }
 
-        if (confirmButton) {
-            confirmButton.click();
-            console.log("NicheIntel Pro Location: Clicked Confirm/Close button");
+        if (closeButton) {
+            closeButton.click();
+            console.log("NicheIntel Pro Location: Clicked Done/Close button");
             console.log("NicheIntel Pro Location: Location successfully updated to", LOCATION_CONFIG.targetZipCode);
         } else {
-            console.log("NicheIntel Pro Location: No confirm or close button found, location may still be updated");
+            console.log("NicheIntel Pro Location: No Done or Close button found, location may still be updated");
         }
 
     } catch (error) {
