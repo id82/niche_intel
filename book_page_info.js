@@ -3,6 +3,198 @@
 
 console.log("NicheIntel Pro: Book page info script loaded");
 
+// ============================================================================
+// LOCATION AUTO-SET FEATURE (amazon.com only)
+// Automatically sets delivery location to New York 10010 if not already set
+// ============================================================================
+
+const LOCATION_CONFIG = {
+    targetZipCode: '10010',
+    targetLocationText: '10010', // Text to check for in location display
+    selectors: {
+        locationTrigger: 'a#nav-global-location-popover-link',
+        zipCodeInput: '#GLUXZipUpdateInput',
+        zipCodeInputAlt: 'input[data-action="GLUXPostalInputAction"]',
+        applyButton: 'input[aria-labelledby="GLUXZipUpdate-announce"]',
+        confirmButton: '#GLUXConfirmClose',
+        confirmButtonAlt: 'input[aria-labelledby="GLUXConfirmClose-announce"]'
+    }
+};
+
+/**
+ * Check if current page is amazon.com (US marketplace only)
+ */
+function isAmazonUS() {
+    const hostname = window.location.hostname;
+    // Match www.amazon.com or amazon.com but NOT amazon.com.au, amazon.co.uk, etc.
+    return hostname === 'www.amazon.com' || hostname === 'amazon.com';
+}
+
+/**
+ * Get the current location text from the location popover trigger
+ */
+function getCurrentLocationText() {
+    const trigger = document.querySelector(LOCATION_CONFIG.selectors.locationTrigger);
+    if (!trigger) {
+        console.log("NicheIntel Pro Location: Location trigger not found");
+        return null;
+    }
+    return trigger.textContent.trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Check if the current location is already set to target zip code
+ */
+function isLocationAlreadySet() {
+    const locationText = getCurrentLocationText();
+    if (!locationText) return false;
+
+    const isSet = locationText.includes(LOCATION_CONFIG.targetLocationText);
+    console.log(`NicheIntel Pro Location: Current location "${locationText}", target zip found: ${isSet}`);
+    return isSet;
+}
+
+/**
+ * Wait for an element to appear in the DOM
+ */
+function waitForElement(selector, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            resolve(element);
+            return;
+        }
+
+        const observer = new MutationObserver((mutations, obs) => {
+            const el = document.querySelector(selector);
+            if (el) {
+                obs.disconnect();
+                resolve(el);
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error(`Element ${selector} not found within ${timeout}ms`));
+        }, timeout);
+    });
+}
+
+/**
+ * Wait for a specified number of milliseconds
+ */
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Automatically set the delivery location to target zip code
+ */
+async function autoSetLocation() {
+    // Only run on amazon.com
+    if (!isAmazonUS()) {
+        console.log("NicheIntel Pro Location: Not amazon.com, skipping location auto-set");
+        return;
+    }
+
+    // Check if location is already set
+    if (isLocationAlreadySet()) {
+        console.log("NicheIntel Pro Location: Location already set to target, skipping");
+        return;
+    }
+
+    console.log("NicheIntel Pro Location: Starting automatic location update...");
+
+    try {
+        // Step 1: Click the location trigger to open the modal
+        const trigger = document.querySelector(LOCATION_CONFIG.selectors.locationTrigger);
+        if (!trigger) {
+            console.log("NicheIntel Pro Location: Location trigger not found, aborting");
+            return;
+        }
+
+        trigger.click();
+        console.log("NicheIntel Pro Location: Clicked location trigger");
+
+        // Step 2: Wait for and fill in the zip code input
+        await sleep(500); // Wait for modal animation
+
+        let zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInput, 3000)
+            .catch(() => null);
+
+        if (!zipInput) {
+            zipInput = await waitForElement(LOCATION_CONFIG.selectors.zipCodeInputAlt, 2000)
+                .catch(() => null);
+        }
+
+        if (!zipInput) {
+            console.log("NicheIntel Pro Location: Zip code input not found, aborting");
+            return;
+        }
+
+        // Clear and set the zip code
+        zipInput.value = '';
+        zipInput.value = LOCATION_CONFIG.targetZipCode;
+        zipInput.dispatchEvent(new Event('input', { bubbles: true }));
+        zipInput.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log("NicheIntel Pro Location: Entered zip code", LOCATION_CONFIG.targetZipCode);
+
+        // Step 3: Click the Apply button
+        await sleep(300);
+
+        const applyButton = document.querySelector(LOCATION_CONFIG.selectors.applyButton);
+        if (!applyButton) {
+            console.log("NicheIntel Pro Location: Apply button not found, aborting");
+            return;
+        }
+
+        applyButton.click();
+        console.log("NicheIntel Pro Location: Clicked Apply button");
+
+        // Step 4: Wait for and click the Confirm/Continue button
+        await sleep(1000); // Wait for confirmation modal
+
+        let confirmButton = await waitForElement(LOCATION_CONFIG.selectors.confirmButton, 3000)
+            .catch(() => null);
+
+        if (!confirmButton) {
+            confirmButton = await waitForElement(LOCATION_CONFIG.selectors.confirmButtonAlt, 2000)
+                .catch(() => null);
+        }
+
+        if (confirmButton) {
+            confirmButton.click();
+            console.log("NicheIntel Pro Location: Clicked Confirm button");
+            console.log("NicheIntel Pro Location: Location successfully updated to", LOCATION_CONFIG.targetZipCode);
+        } else {
+            console.log("NicheIntel Pro Location: Confirm button not found, location may still be updated");
+        }
+
+    } catch (error) {
+        console.error("NicheIntel Pro Location: Error during auto-set:", error);
+    }
+}
+
+// Run location auto-set on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Small delay to ensure page elements are ready
+        setTimeout(autoSetLocation, 1000);
+    });
+} else {
+    // Page already loaded, run with delay
+    setTimeout(autoSetLocation, 1000);
+}
+
+// ============================================================================
+// END LOCATION AUTO-SET FEATURE
+// ============================================================================
+
 // Check if this is a valid Amazon book page
 function isValidBookPage() {
     // Primary check: data-request-context element
