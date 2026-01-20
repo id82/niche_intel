@@ -117,8 +117,6 @@ async function autoSetLocation() {
         return;
     }
 
-    // Mark that we've attempted location setting this session
-    sessionStorage.setItem(sessionKey, 'true');
     console.log("NicheIntel Pro Location: Starting automatic location update...");
 
     // Helper to close modal on abort
@@ -177,6 +175,9 @@ async function autoSetLocation() {
 
         applyButton.click();
         console.log("NicheIntel Pro Location: Clicked Apply button");
+
+        // Mark as attempted AFTER Apply is clicked (Amazon will reload page after this)
+        sessionStorage.setItem(sessionKey, 'true');
 
         // Step 4: Wait for and click the Done button (or close button as fallback)
         await sleep(1000); // Wait for modal to update
