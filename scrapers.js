@@ -106,30 +106,56 @@ function runFullAmazonAnalysis() {
         }
 
         // === REVIEW COUNT EXTRACTION (Enhanced logic) ===
+        // Helper function to parse abbreviated review counts like "(25.3K)" or "1.2M"
+        const parseReviewCount = (text) => {
+          if (!text) return null;
+          // Remove parentheses and whitespace
+          text = text.replace(/[()]/g, '').trim();
+          // Handle K (thousands) and M (millions) suffixes
+          const match = text.match(/^([\d,.]+)\s*([KkMm])?$/);
+          if (!match) return null;
+          let num = parseFloat(match[1].replace(/,/g, ''));
+          if (isNaN(num)) return null;
+          const suffix = match[2]?.toUpperCase();
+          if (suffix === 'K') num *= 1000;
+          else if (suffix === 'M') num *= 1000000;
+          return Math.round(num);
+        };
+
         product.reviewCount = null;
         if (reviewsBlock) {
           const reviewCountBlock = reviewsBlock.querySelector('[data-csa-c-content-id*="ratings-count"]');
           if (reviewCountBlock) {
             const reviewSpan = reviewCountBlock.querySelector('span');
             if (reviewSpan) {
-              const reviewText = reviewSpan.textContent.trim().replace(/,/g, '');
-              product.reviewCount = parseInt(reviewText) || null;
+              product.reviewCount = parseReviewCount(reviewSpan.textContent);
             }
           }
         }
         if (product.reviewCount === null) {
           const reviewElement = card.querySelector('a[aria-label*="ratings"]');
           if (reviewElement) {
-            const reviewSpan = reviewElement.querySelector('span.s-underline-text');
-            if (reviewSpan) {
-              product.reviewCount = parseInt(reviewSpan.textContent.trim().replace(/,/g, '')) || null;
+            // First try the aria-label which has the full number
+            const ariaLabel = reviewElement.getAttribute('aria-label');
+            if (ariaLabel) {
+              const match = ariaLabel.match(/([\d,]+)\s*ratings?/i);
+              if (match) {
+                product.reviewCount = parseInt(match[1].replace(/,/g, '')) || null;
+              }
+            }
+            // Fallback to span text
+            if (product.reviewCount === null) {
+              const reviewSpan = reviewElement.querySelector('span.s-underline-text');
+              if (reviewSpan) {
+                product.reviewCount = parseReviewCount(reviewSpan.textContent);
+              }
             }
           }
         }
         if (product.reviewCount === null) {
           const genericReviewElement = card.querySelector('.a-size-base.s-underline-text');
           if (genericReviewElement) {
-            product.reviewCount = parseInt(genericReviewElement.textContent.trim().replace(/,/g, '')) || null;
+            product.reviewCount = parseReviewCount(genericReviewElement.textContent);
           }
         }
 
