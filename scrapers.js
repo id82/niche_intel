@@ -123,7 +123,21 @@ function runFullAmazonAnalysis() {
         };
 
         product.reviewCount = null;
-        if (reviewsBlock) {
+
+        // PRIORITY 1: aria-label has the exact count (e.g., "1,028 ratings" instead of "1K")
+        const reviewLinkWithAria = card.querySelector('a[aria-label*="ratings"]');
+        if (reviewLinkWithAria) {
+          const ariaLabel = reviewLinkWithAria.getAttribute('aria-label');
+          if (ariaLabel) {
+            const match = ariaLabel.match(/([\d,]+)\s*ratings?/i);
+            if (match) {
+              product.reviewCount = parseInt(match[1].replace(/,/g, '')) || null;
+            }
+          }
+        }
+
+        // PRIORITY 2: Try reviewsBlock span (may be abbreviated like "25.3K")
+        if (product.reviewCount === null && reviewsBlock) {
           const reviewCountBlock = reviewsBlock.querySelector('[data-csa-c-content-id*="ratings-count"]');
           if (reviewCountBlock) {
             const reviewSpan = reviewCountBlock.querySelector('span');
@@ -132,26 +146,16 @@ function runFullAmazonAnalysis() {
             }
           }
         }
-        if (product.reviewCount === null) {
-          const reviewElement = card.querySelector('a[aria-label*="ratings"]');
-          if (reviewElement) {
-            // First try the aria-label which has the full number
-            const ariaLabel = reviewElement.getAttribute('aria-label');
-            if (ariaLabel) {
-              const match = ariaLabel.match(/([\d,]+)\s*ratings?/i);
-              if (match) {
-                product.reviewCount = parseInt(match[1].replace(/,/g, '')) || null;
-              }
-            }
-            // Fallback to span text
-            if (product.reviewCount === null) {
-              const reviewSpan = reviewElement.querySelector('span.s-underline-text');
-              if (reviewSpan) {
-                product.reviewCount = parseReviewCount(reviewSpan.textContent);
-              }
-            }
+
+        // PRIORITY 3: Fallback to underline text in review link
+        if (product.reviewCount === null && reviewLinkWithAria) {
+          const reviewSpan = reviewLinkWithAria.querySelector('span.s-underline-text');
+          if (reviewSpan) {
+            product.reviewCount = parseReviewCount(reviewSpan.textContent);
           }
         }
+
+        // PRIORITY 4: Generic underline text fallback
         if (product.reviewCount === null) {
           const genericReviewElement = card.querySelector('.a-size-base.s-underline-text');
           if (genericReviewElement) {
