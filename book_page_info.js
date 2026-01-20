@@ -136,7 +136,21 @@ async function autoSetLocation() {
             return;
         }
 
+        console.log("NicheIntel Pro Location: Found trigger element:", trigger.tagName, trigger.id);
+        console.log("NicheIntel Pro Location: Trigger visible:", trigger.offsetParent !== null);
+        console.log("NicheIntel Pro Location: Trigger bounding rect:", JSON.stringify(trigger.getBoundingClientRect()));
+
+        // Try multiple click methods
+        trigger.focus();
         trigger.click();
+
+        // Also dispatch a mouse event as backup
+        trigger.dispatchEvent(new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+        }));
+
         console.log("NicheIntel Pro Location: Clicked location trigger");
 
         // Step 2: Wait for and fill in the zip code input
