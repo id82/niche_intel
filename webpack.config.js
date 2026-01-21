@@ -10,7 +10,8 @@ module.exports = {
     background: './background.js',
     'book_page_info': './book_page_info.js',
     report: './report.js',
-    offscreen: './offscreen.js'
+    offscreen: './offscreen.js',
+    scrapers: './src/scrapers/index.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -63,10 +64,6 @@ module.exports = {
           from: '*.css', 
           to: '[name][ext]',
           noErrorOnMissing: true
-        },
-        {
-          from: 'scrapers.js',
-          to: 'scrapers.js'
         },
         {
           from: 'icons/',
