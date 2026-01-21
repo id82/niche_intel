@@ -62,7 +62,7 @@ export function updateTableRow(asin, data) {
     updateCell(`formats-${asin}`, formatCount, val => val || 0);
     updateCell(`rating-${asin}`, avgRating, val => val || 0);
     updateCell(`review-images-${asin}`, reviewImageCount, val => val || 0);
-    if (reviewCount) {
+    if (reviewCount !== null && reviewCount !== undefined) {
         updateCell(`reviews-${asin}`, reviewCount, val => val.toLocaleString());
     }
     updateCell(`bsr-${asin}`, bsr, val => val ? val.toLocaleString() : 'N/A');

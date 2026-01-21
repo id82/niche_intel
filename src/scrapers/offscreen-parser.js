@@ -390,7 +390,10 @@ export function parseProductPageFromHTML(htmlString, url) {
         formats: extractAmazonBookFormats(doc, url),
         customer_reviews: {
             average_rating: parseFloat(find('div#averageCustomerReviews a span.a-icon-alt')?.textContent),
-            review_count: parseInt(find('span#acrCustomerReviewText')?.textContent.replace(/,/g, '')),
+            review_count: (() => {
+                const count = parseInt(find('span#acrCustomerReviewText')?.textContent?.replace(/,/g, ''));
+                return isNaN(count) ? null : count;
+            })(),
             review_image_count: findAll('#cm_cr_carousel_images_section .a-carousel-card').length
         },
         aplus_content: { modulesCount: findAll('[data-aplus-module], .aplus-module').length },
