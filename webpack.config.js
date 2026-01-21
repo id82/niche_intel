@@ -9,7 +9,7 @@ module.exports = {
   entry: {
     background: './background.js',
     'book_page_info': './book_page_info.js',
-    report: './report.js',
+    report: './src/report/index.js',
     offscreen: './offscreen.js',
     scrapers: './src/scrapers/index.js'
   },
