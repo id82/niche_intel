@@ -1447,9 +1447,9 @@ td:contains('No') {
     margin-left: 1px;
 }
 
-/* Cell containing estimate gets subtle background */
+/* Cell containing estimate - no background change, just inherits row styling */
 td.has-estimate {
-    background-color: rgba(107, 114, 128, 0.08);
+    /* Background removed - keep normal row styling */
 }
 
 /* Footer legend styling */

@@ -721,7 +721,7 @@ function updateTableRow(asin, data) {
         } else if (royaltyUnit !== null) {
             const currencySymbol = getCurrencySymbol(currentDomain);
             if (isEstimate) {
-                royaltyUnitCell.innerHTML = `<span class="royalty-estimated" title="${estimateTooltip}">~${currencySymbol}${royaltyUnit.toFixed(2)}</span>`;
+                royaltyUnitCell.innerHTML = `<span class="royalty-estimated" title="${estimateTooltip}">${currencySymbol}${royaltyUnit.toFixed(2)}</span>`;
                 royaltyUnitCell.classList.add('has-estimate');
             } else {
                 royaltyUnitCell.textContent = `${currencySymbol}${royaltyUnit.toFixed(2)}`;
@@ -746,7 +746,7 @@ function updateTableRow(asin, data) {
         } else if (royaltyMonth !== null) {
             const currencySymbol = getCurrencySymbol(currentDomain);
             if (isEstimate) {
-                royaltyMonthCell.innerHTML = `<span class="royalty-estimated" title="${estimateTooltip}">~${currencySymbol}${Math.round(royaltyMonth).toLocaleString()}</span>`;
+                royaltyMonthCell.innerHTML = `<span class="royalty-estimated" title="${estimateTooltip}">${currencySymbol}${Math.round(royaltyMonth).toLocaleString()}</span>`;
                 royaltyMonthCell.classList.add('has-estimate');
             } else {
                 royaltyMonthCell.textContent = `${currencySymbol}${Math.round(royaltyMonth).toLocaleString()}`;
