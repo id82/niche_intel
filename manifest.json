@@ -1,7 +1,7 @@
 {
    "manifest_version":3,
    "name":"NicheIntel Pro by Adigy",
-   "version":"1.0.31",
+   "version":"1.0.32",
    "description":"Performs Amazon Search Page analysis and deep-dives on all book search pages.",
    "permissions":[
       "activeTab",
@@ -64,6 +64,7 @@
             "report.html",
             "report.js",
             "report.css",
+            "scrapers.js",
             "icons/icon16.png",
             "icons/icon32.png"
          ],
