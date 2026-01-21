@@ -1431,3 +1431,31 @@ td:contains('No') {
     color: #e53e3e;
     font-weight: 600;
 }
+
+/* Estimated royalty styling for books exceeding KDP page limits */
+.royalty-estimated {
+    color: #6b7280;
+    font-style: italic;
+    cursor: help;
+    position: relative;
+}
+
+.royalty-estimated::after {
+    content: '*';
+    font-size: 10px;
+    vertical-align: super;
+    margin-left: 1px;
+}
+
+/* Cell containing estimate gets subtle background */
+td.has-estimate {
+    background-color: rgba(107, 114, 128, 0.08);
+}
+
+/* Footer legend styling */
+.footer-legend {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 8px;
+    font-style: italic;
+}

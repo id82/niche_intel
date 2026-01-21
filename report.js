@@ -710,24 +710,50 @@ function updateTableRow(asin, data) {
     
     const royaltyUnitCell = document.getElementById(`royalty-unit-${asin}`);
     if (royaltyUnitCell) {
+        // Check if this is an estimated royalty (book exceeds KDP page limits)
+        const isEstimate = data.royalties && data.royalties.is_estimate;
+        const estimateTooltip = isEstimate ?
+            'Estimated. Book exceeds KDP page limits. Royalty based on ~10% traditional publishing rate.' : '';
+
         // Show fallback calculation results even if there was an error in complex calculation
         if(data.royalties && data.royalties.error && (royaltyUnit === null || royaltyUnit === undefined)) {
             royaltyUnitCell.textContent = 'N/A';
-        } else {
+        } else if (royaltyUnit !== null) {
             const currencySymbol = getCurrencySymbol(currentDomain);
-            royaltyUnitCell.textContent = royaltyUnit !== null ? `${currencySymbol}${royaltyUnit.toFixed(2)}` : 'N/A';
+            if (isEstimate) {
+                royaltyUnitCell.innerHTML = `<span class="royalty-estimated" title="${estimateTooltip}">~${currencySymbol}${royaltyUnit.toFixed(2)}</span>`;
+                royaltyUnitCell.classList.add('has-estimate');
+            } else {
+                royaltyUnitCell.textContent = `${currencySymbol}${royaltyUnit.toFixed(2)}`;
+                royaltyUnitCell.classList.remove('has-estimate');
+            }
+        } else {
+            royaltyUnitCell.textContent = 'N/A';
         }
         royaltyUnitCell.classList.remove('placeholder');
     }
 
     const royaltyMonthCell = document.getElementById(`royalty-month-${asin}`);
     if (royaltyMonthCell) {
+        // Check if this is an estimated royalty (book exceeds KDP page limits)
+        const isEstimate = data.royalties && data.royalties.is_estimate;
+        const estimateTooltip = isEstimate ?
+            'Estimated. Book exceeds KDP page limits. Royalty based on ~10% traditional publishing rate.' : '';
+
         // Show fallback calculation results even if there was an error in complex calculation
         if(data.royalties && data.royalties.error && (royaltyMonth === null || royaltyMonth === undefined)) {
             royaltyMonthCell.textContent = 'N/A';
-        } else {
+        } else if (royaltyMonth !== null) {
             const currencySymbol = getCurrencySymbol(currentDomain);
-            royaltyMonthCell.textContent = royaltyMonth !== null ? `${currencySymbol}${Math.round(royaltyMonth).toLocaleString()}` : 'N/A';
+            if (isEstimate) {
+                royaltyMonthCell.innerHTML = `<span class="royalty-estimated" title="${estimateTooltip}">~${currencySymbol}${Math.round(royaltyMonth).toLocaleString()}</span>`;
+                royaltyMonthCell.classList.add('has-estimate');
+            } else {
+                royaltyMonthCell.textContent = `${currencySymbol}${Math.round(royaltyMonth).toLocaleString()}`;
+                royaltyMonthCell.classList.remove('has-estimate');
+            }
+        } else {
+            royaltyMonthCell.textContent = 'N/A';
         }
         royaltyMonthCell.classList.remove('placeholder');
     }

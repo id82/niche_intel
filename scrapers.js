@@ -1119,6 +1119,79 @@ function runFullProductPageExtraction() {
         return { code: 'USD' }; // Default fallback
     }
 
+    // KDP page limits
+    const KDP_PAPERBACK_MAX_PAGES = 828;
+    const KDP_HARDCOVER_MAX_PAGES = 550;
+    const TRADITIONAL_ROYALTY_RATE = 0.10; // 10% traditional publishing royalty estimate
+
+    // Calculate estimated royalty for books that exceed KDP page limits
+    // These are likely traditionally published books, not self-published via KDP
+    function calculateTraditionalPublishingEstimate(format, productDetails, marketplaceInfo) {
+        console.log("scrapers.js: Using traditional publishing estimate (book exceeds KDP page limits)");
+
+        const prices = format.prices || [];
+        let price = null;
+
+        if (prices.length > 0) {
+            const listPriceObj = prices.find(p => p.type === 'list_price');
+            if (listPriceObj) {
+                price = listPriceObj.price;
+            } else {
+                const validPrices = prices.filter(p => p.type !== 'ku_price').map(p => p.price);
+                if (validPrices.length > 0) {
+                    price = Math.max(...validPrices);
+                }
+            }
+        }
+
+        const bsr = productDetails.bsr || null;
+        const pageCount = productDetails.print_length;
+        const book_type = format.formatName.toLowerCase();
+
+        if (!price) {
+            console.warn("scrapers.js: No valid price found for traditional publishing estimate");
+            return { error: "No valid price found", is_estimate: true };
+        }
+
+        // Estimate monthly sales from BSR if available
+        let monthly_sales = 0;
+        if (bsr) {
+            const daily_sales = estimateSales(bsr, book_type, marketplaceInfo.code);
+            monthly_sales = Math.round(daily_sales * 30);
+        } else {
+            monthly_sales = 10; // Conservative fallback
+            console.warn("scrapers.js: No BSR available, using fallback monthly sales estimate");
+        }
+
+        // Traditional publishing royalty estimate: ~10% of list price
+        const royaltyPerUnit = parseFloat((price * TRADITIONAL_ROYALTY_RATE).toFixed(2));
+        const monthly_royalty = Math.round(royaltyPerUnit * monthly_sales);
+
+        console.log("scrapers.js: Traditional publishing estimate result:", {
+            royalty_per_unit: royaltyPerUnit,
+            monthly_sales,
+            monthly_royalty,
+            page_count: pageCount,
+            exceeds_kdp_limit: true
+        });
+
+        return {
+            royalty_per_unit: royaltyPerUnit,
+            monthly_sales: monthly_sales,
+            monthly_royalty: monthly_royalty,
+            is_estimate: true,
+            calculation_assumptions: {
+                is_traditional_publishing_estimate: true,
+                traditional_royalty_rate: TRADITIONAL_ROYALTY_RATE,
+                price_used: price,
+                page_count: pageCount,
+                bsr_used: bsr,
+                book_type: book_type,
+                reason: `Book exceeds KDP page limits (${pageCount} pages)`
+            }
+        };
+    }
+
     // Simplified fallback calculation that mirrors the working mini table logic
     function calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo) {
         console.log("scrapers.js: Using simplified fallback royalty calculation");
@@ -1267,6 +1340,15 @@ function runFullProductPageExtraction() {
         }
 
         if (!is_supported || !printing_cost) {
+            // Check if the book exceeds KDP page limits - use traditional publishing estimate
+            const exceedsKdpLimit = (book_type.includes('paperback') && page_count > KDP_PAPERBACK_MAX_PAGES) ||
+                                    (book_type.includes('hardcover') && page_count > KDP_HARDCOVER_MAX_PAGES);
+
+            if (exceedsKdpLimit) {
+                console.warn(`scrapers.js: Book exceeds KDP page limits (Type: ${book_type}, Pages: ${page_count}), using traditional publishing estimate`);
+                return calculateTraditionalPublishingEstimate(format, productDetails, marketplaceInfo);
+            }
+
             console.warn(`scrapers.js: Combination not supported (Type: ${book_type}, Pages: ${page_count}), falling back to simplified calculation`);
             return calculateSimplifiedRoyalty(format, productDetails, marketplaceInfo);
         }
