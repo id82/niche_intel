@@ -388,14 +388,75 @@ export function parseProductPageFromHTML(htmlString, url) {
         cover_url: find('img#landingImage')?.src || null,
         product_details: extractProductDetails(doc, url),
         formats: extractAmazonBookFormats(doc, url),
-        customer_reviews: {
-            average_rating: parseFloat(find('div#averageCustomerReviews a span.a-icon-alt')?.textContent),
-            review_count: (() => {
-                const count = parseInt(find('span#acrCustomerReviewText')?.textContent?.replace(/,/g, ''));
-                return isNaN(count) ? null : count;
-            })(),
-            review_image_count: findAll('#cm_cr_carousel_images_section .a-carousel-card').length
-        },
+        customer_reviews: (() => {
+            const debugInfo = [];
+            let reviewCount = null;
+
+            // Try primary selector
+            let reviewText = find('span#acrCustomerReviewText')?.textContent;
+            debugInfo.push(`primary(span#acrCustomerReviewText): ${reviewText || 'null'}`);
+
+            // Fallback selectors if primary fails
+            if (!reviewText) {
+                reviewText = find('#acrCustomerReviewText')?.textContent;
+                debugInfo.push(`fallback1(#acrCustomerReviewText): ${reviewText || 'null'}`);
+            }
+            if (!reviewText) {
+                reviewText = find('[data-hook="total-review-count"]')?.textContent;
+                debugInfo.push(`fallback2([data-hook="total-review-count"]): ${reviewText || 'null'}`);
+            }
+            // Try extracting from review count link aria-label
+            if (!reviewText) {
+                const reviewLink = find('#acrCustomerReviewLink');
+                const ariaLabel = reviewLink?.getAttribute('aria-label');
+                debugInfo.push(`fallback3(#acrCustomerReviewLink aria-label): ${ariaLabel || 'null'}`);
+                if (ariaLabel) {
+                    const match = ariaLabel.match(/([\d,]+)\s*rating/i);
+                    if (match) reviewText = match[1];
+                }
+            }
+            // Try extracting from JSON-LD structured data
+            if (!reviewText) {
+                const scripts = findAll('script[type="application/ld+json"]');
+                debugInfo.push(`fallback4(JSON-LD scripts found): ${scripts.length}`);
+                for (const script of scripts) {
+                    try {
+                        const json = JSON.parse(script.textContent);
+                        const jsonReviewCount = json.aggregateRating?.reviewCount || json.aggregateRating?.ratingCount;
+                        if (jsonReviewCount) {
+                            debugInfo.push(`JSON-LD reviewCount: ${jsonReviewCount}`);
+                            reviewCount = parseInt(String(jsonReviewCount).replace(/,/g, ''), 10);
+                            break;
+                        }
+                    } catch (e) {
+                        // Continue to next script
+                    }
+                }
+            }
+            // Try the cr-widget data
+            if (!reviewText && reviewCount === null) {
+                const crWidget = find('#cm-cr-dp-review-list');
+                const dataCount = crWidget?.getAttribute('data-review-count');
+                debugInfo.push(`fallback5(#cm-cr-dp-review-list data-review-count): ${dataCount || 'null'}`);
+                if (dataCount) reviewText = dataCount;
+            }
+
+            // Parse from reviewText if we haven't found it yet
+            if (reviewCount === null && reviewText) {
+                const countStr = String(reviewText).split(" ")[0].replace(/,/g, '');
+                reviewCount = parseInt(countStr, 10);
+                if (isNaN(reviewCount)) reviewCount = null;
+            }
+
+            debugInfo.push(`final reviewCount: ${reviewCount}`);
+
+            return {
+                average_rating: parseFloat(find('div#averageCustomerReviews a span.a-icon-alt')?.textContent),
+                review_count: reviewCount,
+                review_image_count: findAll('#cm_cr_carousel_images_section .a-carousel-card').length,
+                _debug_review_extraction: debugInfo.join(' | ')
+            };
+        })(),
         aplus_content: { modulesCount: findAll('[data-aplus-module], .aplus-module').length },
         ugc_videos: { video_count: findAll('[data-video-url], .video-block').length },
         editorial_reviews: extractEditorialReviews(doc),

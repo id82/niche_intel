@@ -32,6 +32,7 @@ export function updateTableRow(asin, data) {
     const avgRating = get(['customer_reviews', 'average_rating'], data);
     const reviewImageCount = get(['customer_reviews', 'review_image_count'], data);
     const reviewCount = get(['customer_reviews', 'review_count'], data);
+    console.log(`report.js: reviewCount for ${asin}:`, reviewCount, 'from customer_reviews:', data.customer_reviews);
     const bsr = get(['product_details', 'bsr'], data);
     const daysOnMarket = get(['product_details', 'days_on_market'], data);
     const pageCount = get(['product_details', 'print_length'], data);
