@@ -354,27 +354,27 @@ function extractUgcVideos() {
     const results = { videos: [], video_count: 0 };
 
     try {
-        const widget = document.querySelector('div[id="va-related-videos-widget_feature_div"]');
-        if (!widget) return results;
+        const container = document.querySelector('#vse-placeholder-related-videos');
+        if (!container) return results;
 
-        const videoSlides = widget.querySelectorAll('li[aria-roledescription="slide"]');
+        const videoItems = container.querySelectorAll('.vse-video-item');
 
         const makeAbsoluteUrl = (path) => {
             if (!path || path.startsWith('http')) return path;
             return new URL(path, window.location.origin).href;
         };
 
-        videoSlides.forEach(li => {
-            const videoContainerDiv = li.firstElementChild;
-            if (!videoContainerDiv) return;
+        videoItems.forEach(item => {
+            const link = item.querySelector('a.vse-carousel-item');
+            const vdpPath = link ? link.getAttribute('data-redirect-url') : null;
 
             results.videos.push({
-                title: videoContainerDiv.dataset.title || null,
-                creatorName: videoContainerDiv.dataset.publicName || null,
-                creatorProfileUrl: makeAbsoluteUrl(videoContainerDiv.dataset.profileLink),
-                duration: videoContainerDiv.dataset.formattedDuration || null,
-                uploadDate: videoContainerDiv.dataset.videoAge || null,
-                videoUrl: makeAbsoluteUrl(videoContainerDiv.dataset.vdpUrl)
+                title: (item.querySelector('.vse-video-title-text') || {}).textContent?.trim() || null,
+                creatorName: (item.querySelector('.vse-video-vendorname') || {}).textContent?.trim() || null,
+                creatorProfileUrl: null,
+                duration: (item.querySelector('.vse-video-duration') || {}).textContent?.trim() || null,
+                uploadDate: null,
+                videoUrl: vdpPath ? makeAbsoluteUrl(vdpPath) : null
             });
         });
 

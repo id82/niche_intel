@@ -458,7 +458,7 @@ export function parseProductPageFromHTML(htmlString, url) {
             };
         })(),
         aplus_content: { modulesCount: findAll('[data-aplus-module], .aplus-module').length },
-        ugc_videos: { video_count: findAll('[data-video-url], .video-block').length },
+        ugc_videos: { video_count: findAll('#vse-placeholder-related-videos .vse-video-item').length },
         editorial_reviews: extractEditorialReviews(doc),
         author_info: extractAuthorInfo(doc),
         royalties: null

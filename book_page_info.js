@@ -540,8 +540,8 @@ function extractBookData() {
     const aplusElements = document.querySelectorAll('[data-aplus-module], .aplus-module, #aplus_feature_div .aplus-module');
     data.aplusModules = aplusElements.length;
     
-    // Extract UGC videos (simplified)
-    const ugcVideoElements = document.querySelectorAll('[data-video-url], .video-block, [data-hook="vse-video-block"]');
+    // Extract UGC videos - section lazy-loads on scroll, so count may update via watchForUgcVideos()
+    const ugcVideoElements = document.querySelectorAll('#vse-placeholder-related-videos .vse-video-item');
     data.ugcVideos = ugcVideoElements.length;
     
     // Check for editorial reviews
@@ -1146,12 +1146,32 @@ function createInfoTable(bookData, metrics) {
             border-right: 1px solid #e5e7eb;
             border-bottom: 1px solid #e5e7eb;
         `;
+        if (labels[index] === 'UGC Videos') {
+            td.dataset.nicheintelCell = 'ugc-videos';
+        }
         dataRow.appendChild(td);
     });
     table.appendChild(dataRow);
     
     container.appendChild(table);
     return container;
+}
+
+// Watch for UGC videos lazy-loading into view and update the cell
+function watchForUgcVideos() {
+    const widget = document.querySelector('#va-related-videos-widget_feature_div');
+    if (!widget) return;
+
+    const observer = new MutationObserver(() => {
+        const videoItems = document.querySelectorAll('#vse-placeholder-related-videos .vse-video-item');
+        if (videoItems.length > 0) {
+            const cell = document.querySelector('[data-nicheintel-cell="ugc-videos"]');
+            if (cell) cell.textContent = videoItems.length;
+            observer.disconnect();
+        }
+    });
+
+    observer.observe(widget, { childList: true, subtree: true });
 }
 
 // Insert the info table into the page
@@ -1188,8 +1208,11 @@ function insertInfoTable() {
     
     // Insert at the beginning of the target element
     targetElement.insertBefore(infoTable, targetElement.firstChild);
-    
+
     console.log("NicheIntel Pro: Info table inserted successfully");
+
+    // Videos lazy-load on scroll - watch for them and update the cell when they appear
+    watchForUgcVideos();
 }
 
 // Main initialization function
