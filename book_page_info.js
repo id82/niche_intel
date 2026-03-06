@@ -1157,10 +1157,21 @@ function createInfoTable(bookData, metrics) {
     return container;
 }
 
-// Watch for UGC videos lazy-loading into view and update the cell
+// Trigger UGC video lazy-loading by briefly scrolling to the widget, then restore position
 function watchForUgcVideos() {
     const widget = document.querySelector('#va-related-videos-widget_feature_div');
     if (!widget) return;
+
+    // Already loaded
+    const existing = document.querySelectorAll('#vse-placeholder-related-videos .vse-video-item');
+    if (existing.length > 0) {
+        const cell = document.querySelector('[data-nicheintel-cell="ugc-videos"]');
+        if (cell) cell.textContent = existing.length;
+        return;
+    }
+
+    const savedScrollY = window.scrollY;
+    let resolved = false;
 
     const observer = new MutationObserver(() => {
         const videoItems = document.querySelectorAll('#vse-placeholder-related-videos .vse-video-item');
@@ -1168,10 +1179,23 @@ function watchForUgcVideos() {
             const cell = document.querySelector('[data-nicheintel-cell="ugc-videos"]');
             if (cell) cell.textContent = videoItems.length;
             observer.disconnect();
+            resolved = true;
+            window.scrollTo({ top: savedScrollY, behavior: 'instant' });
         }
     });
 
     observer.observe(widget, { childList: true, subtree: true });
+
+    // Scroll to widget to trigger lazy load
+    widget.scrollIntoView({ behavior: 'instant', block: 'center' });
+
+    // Fallback: scroll back after 4s if nothing loaded
+    setTimeout(() => {
+        if (!resolved) {
+            observer.disconnect();
+            window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+        }
+    }, 4000);
 }
 
 // Insert the info table into the page
