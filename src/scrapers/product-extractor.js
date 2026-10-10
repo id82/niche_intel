@@ -490,7 +490,7 @@ function extractAmazonBookFormats() {
     });
 
     // Add strikethrough list price to selected format
-    const listPriceEl = document.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"] span');
+    const listPriceEl = document.querySelector('.apex-core-price-identifier .apex-basisprice-value .a-offscreen, div[id*="corePriceDisplay"] .a-price.a-text-price .a-offscreen');
     if (listPriceEl) {
         const listPriceText = listPriceEl.textContent;
         const listPrice = cleanPrice(listPriceText);

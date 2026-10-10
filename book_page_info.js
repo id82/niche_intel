@@ -415,7 +415,7 @@ function extractBookData() {
     });
     
     // Extract strikethrough list price from core price display
-    const listPriceEl = document.querySelector('div[id*="corePriceDisplay"] span[class="a-price a-text-price"] span');
+    const listPriceEl = document.querySelector('.apex-core-price-identifier .apex-basisprice-value .a-offscreen, div[id*="corePriceDisplay"] .a-price.a-text-price .a-offscreen');
     if (listPriceEl) {
         const listPrice = cleanPrice(listPriceEl.textContent);
         if (listPrice && !prices.includes(listPrice)) {
