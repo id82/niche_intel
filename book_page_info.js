@@ -593,6 +593,7 @@ function getAdvancedReviewMetrics() {
         const totalScore = calculateTotalScore(exactCounts);
 
         // --- 4. CALCULATE METRICS ---
+        reviewData.totalScore = totalScore;
         reviewData.calculatedMetrics = calculateMetrics(exactCounts, totalCount, totalScore, averageRating);
 
         return reviewData;
@@ -739,7 +740,7 @@ function calculateTotalScore(counts) {
 }
 
 function calculateRequired5StarReviews(currentScore, currentCount, targetAverage) {
-    if (targetAverage <= 1 || targetAverage > 5 || currentCount === 0) {
+    if (targetAverage < 1 || targetAverage > 5 || currentCount === 0) {
         return null;
     }
 
@@ -748,9 +749,10 @@ function calculateRequired5StarReviews(currentScore, currentCount, targetAverage
         return 0;
     }
 
-    // Formula: x = (target * current_count - current_score) / (5 - target)
-    const numerator = (targetAverage * currentCount) - currentScore;
-    const denominator = 5 - targetAverage;
+    // Scale one-decimal rating targets to whole points to avoid floating-point rounding errors.
+    const targetPoints = targetAverage * 10;
+    const numerator = (targetPoints * currentCount) - (currentScore * 10);
+    const denominator = 50 - targetPoints;
 
     if (denominator <= 0) {
         return null; // Impossible target
@@ -780,17 +782,6 @@ function calculateMetrics(counts, totalCount, totalScore, currentAverage) {
         metrics.targetAverageWithout1Star = 0;
         metrics.required5StarReviewOffset = null;
     }
-
-    // Calculate reviews needed for specific targets
-    const targets = [4.3, 4.8];
-    targets.forEach(target => {
-        const key = `reviewsNeededFor${target.toString().replace('.', '_')}`;
-        if (currentAverage < target) {
-            metrics[key] = calculateRequired5StarReviews(totalScore, totalCount, target);
-        } else {
-            metrics[key] = 0;
-        }
-    });
 
     // Add verification metrics
     const calculatedAverage = totalScore / totalCount;
@@ -1050,28 +1041,26 @@ function createInfoTable(bookData, metrics) {
         font-size: 14px;
     `;
     
-    // Determine dynamic header and calculate 5-star reviews needed
     const reviewMetrics = bookData.reviewMetrics;
-    let dynamicColumnHeader = '5★ Needed (4.3)';
-    let reviewsNeeded = 'N/A';
-    
-    if (reviewMetrics && reviewMetrics.currentAverageRating > 0 && !reviewMetrics.errors.length) {
-        const currentRating = reviewMetrics.currentAverageRating;
-        
-        if (currentRating >= 4.8) {
-            dynamicColumnHeader = '5★ Needed (4.8)';
-            reviewsNeeded = '0';
-        } else if (currentRating >= 4.3) {
-            dynamicColumnHeader = '5★ Needed (4.8)';
-            reviewsNeeded = reviewMetrics.calculatedMetrics.reviewsNeededFor4_8 || 'N/A';
-        } else {
-            dynamicColumnHeader = '5★ Needed (4.3)';
-            reviewsNeeded = reviewMetrics.calculatedMetrics.reviewsNeededFor4_3 || 'N/A';
-        }
-    }
-    
+    const initialTarget = reviewMetrics?.currentAverageRating >= 4.3 ? 4.8 : 4.3;
+    const targetControl = document.createElement('label');
+    targetControl.style.cssText = 'display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; font-size: 14px; color: #374151;';
+    targetControl.appendChild(document.createTextNode('Target rating: '));
+    const targetValue = document.createElement('output');
+    const targetSlider = document.createElement('input');
+    targetSlider.type = 'range';
+    targetSlider.min = '1';
+    targetSlider.max = '5';
+    targetSlider.step = '0.1';
+    targetSlider.value = initialTarget;
+    targetSlider.setAttribute('aria-label', 'Target rating');
+    targetSlider.style.cssText = 'width: 180px; max-width: 100%; accent-color: #f59e0b;';
+    targetControl.appendChild(targetSlider);
+    targetControl.appendChild(targetValue);
+    container.appendChild(targetControl);
+
     // Create table data with the new 4th column
-    const labels = ['ASIN', 'Price', 'Pages', dynamicColumnHeader, 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'BE ACOS', 'Royalty/Book', 'Est. Monthly Royalty'];
+    const labels = ['ASIN', 'Price', 'Pages', '', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'BE ACOS', 'Royalty/Book', 'Est. Monthly Royalty'];
     
     // Calculate BE ACOS (Break Even ACOS) = Royalty/Book ÷ Price
     const price = bookData.listPrice || bookData.price;
@@ -1081,7 +1070,7 @@ function createInfoTable(bookData, metrics) {
         bookData.asin || 'N/A',
         bookData.listPrice ? `$${bookData.listPrice.toFixed(2)}` : 'N/A',
         bookData.pageCount ? bookData.pageCount.toLocaleString() : 'N/A',
-        reviewsNeeded,
+        'N/A',
         bookData.reviewImages || '0',
         bookData.aplusModules || '0',
         bookData.ugcVideos || '0',
@@ -1115,7 +1104,7 @@ function createInfoTable(bookData, metrics) {
         // Add tooltip to the 4th column (index 3 - the dynamic rating column)
         if (index === 3) {
             th.style.cursor = 'help';
-            th.title = 'At 4.3 rating the 5th star on Amazon is colored half in. At 4.8 the 5th star is fully colored in, which leads to better conversion rates.';
+            th.title = 'Estimated additional five-star reviews needed to reach the selected target, based on the rating breakdown. Use the target rating slider to recalculate.';
             
             // Enhanced tooltip styling
             th.addEventListener('mouseenter', function() {
@@ -1153,6 +1142,20 @@ function createInfoTable(bookData, metrics) {
     });
     table.appendChild(dataRow);
     
+    const updateTarget = () => {
+        const target = Number(targetSlider.value);
+        targetValue.textContent = target.toFixed(1);
+        targetSlider.setAttribute('aria-valuetext', `${target.toFixed(1)} stars`);
+        headerRow.children[3].textContent = `5★ Needed (${target.toFixed(1)})`;
+        let result = 'N/A';
+        if (reviewMetrics && !reviewMetrics.errors.length && reviewMetrics.totalRatingCount > 0) {
+            const required = calculateRequired5StarReviews(reviewMetrics.totalScore, reviewMetrics.totalRatingCount, target);
+            result = required === null ? 'Unreachable' : required.toLocaleString();
+        }
+        dataRow.children[3].textContent = result;
+    };
+    targetSlider.addEventListener('input', updateTarget);
+    updateTarget();
     container.appendChild(table);
     return container;
 }
