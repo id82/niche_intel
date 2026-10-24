@@ -1006,6 +1006,8 @@ function createInfoTable(bookData, metrics) {
     header.style.cssText = `
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
+        row-gap: 8px;
         margin-bottom: 15px;
         padding-bottom: 10px;
         border-bottom: 2px solid #e2e8f0;
@@ -1018,6 +1020,7 @@ function createInfoTable(bookData, metrics) {
         width: 24px;
         height: 24px;
         margin-right: 8px;
+        flex-shrink: 0;
     `;
     
     const title = document.createElement('h3');
@@ -1042,14 +1045,20 @@ function createInfoTable(bookData, metrics) {
     `;
     
     const reviewMetrics = bookData.reviewMetrics;
-    const initialTarget = reviewMetrics?.currentAverageRating >= 4.3 ? 4.8 : 4.3;
+    const hasReviewData = reviewMetrics && !reviewMetrics.errors.length && reviewMetrics.totalRatingCount > 0;
+    const currentRating = hasReviewData
+        ? Math.max(reviewMetrics.currentAverageRating, reviewMetrics.totalScore / reviewMetrics.totalRatingCount)
+        : 0;
+    const minimumTarget = Math.min(5, (Math.floor(currentRating * 10) + 1) / 10);
+    const initialTarget = Math.max(minimumTarget, currentRating >= 4.3 ? 4.8 : 4.3);
     const targetControl = document.createElement('label');
-    targetControl.style.cssText = 'display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; font-size: 14px; color: #374151;';
+    targetControl.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-left: auto; padding-left: 16px; font-size: 14px; color: #374151; white-space: nowrap;';
     targetControl.appendChild(document.createTextNode('Target rating: '));
     const targetValue = document.createElement('output');
     const targetSlider = document.createElement('input');
     targetSlider.type = 'range';
-    targetSlider.min = '1';
+    targetSlider.min = minimumTarget.toFixed(1);
+    targetSlider.disabled = !hasReviewData || currentRating >= 5;
     targetSlider.max = '5';
     targetSlider.step = '0.1';
     targetSlider.value = initialTarget;
@@ -1057,7 +1066,7 @@ function createInfoTable(bookData, metrics) {
     targetSlider.style.cssText = 'width: 180px; max-width: 100%; accent-color: #f59e0b;';
     targetControl.appendChild(targetSlider);
     targetControl.appendChild(targetValue);
-    container.appendChild(targetControl);
+    header.appendChild(targetControl);
 
     // Create table data with the new 4th column
     const labels = ['ASIN', 'Price', 'Pages', '', 'Review Images', 'A+ Modules', 'UGC Videos', 'Editorial Reviews', 'BSR', 'Large Trim', 'BE ACOS', 'Royalty/Book', 'Est. Monthly Royalty'];
@@ -1148,7 +1157,7 @@ function createInfoTable(bookData, metrics) {
         targetSlider.setAttribute('aria-valuetext', `${target.toFixed(1)} stars`);
         headerRow.children[3].textContent = `5★ Needed (${target.toFixed(1)})`;
         let result = 'N/A';
-        if (reviewMetrics && !reviewMetrics.errors.length && reviewMetrics.totalRatingCount > 0) {
+        if (hasReviewData) {
             const required = calculateRequired5StarReviews(reviewMetrics.totalScore, reviewMetrics.totalRatingCount, target);
             result = required === null ? 'Unreachable' : required.toLocaleString();
         }
